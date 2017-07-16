@@ -9,6 +9,23 @@ defmodule Express.Application do
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
 
+    do_start(Mix.env())
+  end
+
+  @spec do_start(atom()) :: {:ok, pid} |
+                            :ignore |
+                            {:error, {:already_started, pid()} |
+                                      {:shutdown, any()} |
+                                      any()}
+  defp do_start(:test) do
+    opts = [
+      strategy: :one_for_one,
+      name: Express.Supervisor
+    ]
+
+    Supervisor.start_link([], opts)
+  end
+  defp do_start(_) do
     children = [
       :poolboy.child_spec(apns_pool_name(), apns_poolboy_config(), {
         HTTP2.ChatterboxClient,

@@ -23,7 +23,8 @@ defmodule Express.Mixfile do
       {:chatterbox, "~> 0.5"},
       {:poolboy, "~> 1.5"},
       {:httpoison, "~> 0.12"},
-      {:exop, "~> 0.4.4"}
+      {:exop, "~> 0.4.4"},
+      {:mock, "~> 0.2.0", only: :test}
     ]
   end
 end

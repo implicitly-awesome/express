@@ -1,17 +1,17 @@
-defmodule Express.APNS.Client do
+defmodule Express.APNS.Supervisor do
   @moduledoc """
-  APNS client which owns a connection, creates workers and sends messages via workers.
+  APNS supervisor which owns a connection, spawns workers and sends push messages via workers.
   """
 
   use GenServer
   alias Express.Operations.LogMessage
 
   alias Express.Network.HTTP2
-  alias Express.APNS
+  alias Express.APNS.{Worker, PushMessage}
 
   defmodule State do
     @moduledoc """
-    Defines APNS client state structure.
+    Defines APNS supervisor state structure.
     """
 
     @type t :: %__MODULE__{connection: HTTP2.Connection.t,
@@ -20,9 +20,6 @@ defmodule Express.APNS.Client do
 
     defstruct ~w(connection workers monitors)a
   end
-
-  @type push_result :: {:ok, %{status: pos_integer(), body: any()}} |
-                       {:error, %{status: pos_integer(), body: any()}}
 
   @type open_socket_result :: {:ok, State.t} |
                               {:stop, {:error, :timeout}} |
@@ -47,7 +44,7 @@ defmodule Express.APNS.Client do
         }}
       {:error, :open_socket, :timeout} ->
         error_message = """
-        [APNS client] Could not establish a connection with APNS.
+        [APNS supervisor] Could not establish a connection with APNS.
         Is certificate valid and signed for :#{inspect(ssl_config[:mode])} mode? 
         """
         LogMessage.run!(message: error_message)
@@ -55,7 +52,7 @@ defmodule Express.APNS.Client do
         {:stop, {:error, :timeout}}
       {:error, :ssl_config, reason} ->
         error_message = """
-        [APNS client] Could not establish a connection with APNS.
+        [APNS supervisor] Could not establish a connection with APNS.
         Invalid SSL configuration: #{inspect(reason)}
         """
         LogMessage.run!(message: error_message)
@@ -63,7 +60,7 @@ defmodule Express.APNS.Client do
         {:stop, {:error, :invalid_ssl_config}}
       _ ->
         error_message = """
-        [APNS client] Could not establish a connection with APNS.
+        [APNS supervisor] Could not establish a connection with APNS.
         Unhandled error occured.
         """
         LogMessage.run!(message: error_message)
@@ -74,7 +71,9 @@ defmodule Express.APNS.Client do
 
   @doc "Returns SSL configuration with which the connection was established"
   @spec current_ssl_config(pid()) :: HTTP2.SSLConfig.t
-  def current_ssl_config(client), do: :sys.get_state(client).connection.ssl_config
+  def current_ssl_config(client) do
+    :sys.get_state(client).connection.ssl_config
+  end
 
   @doc "Stops the client"
   def stop(client), do: GenServer.stop(client)
@@ -86,14 +85,17 @@ defmodule Express.APNS.Client do
   def workers_list(client), do: GenServer.call(client, :workers_list)
 
   @doc "Stops a worker"
-  def terminate_worker(client, worker_pid), do: GenServer.call(client, {:terminate_worker, worker_pid})
+  def terminate_worker(client, worker_pid) do
+    GenServer.call(client, {:terminate_worker, worker_pid})
+  end
 
   @doc """
-  Sends `push_message` with the `client`.
+  Sends `push_message` with the `supervisor`.
   Invokes `callback_fun` function after a response.
   """
-  @spec push(pid(), APNS.PushMessage.t, Keyword.t | nil, ((APNS.PushMessage.t, push_result) -> any()) | nil) :: {:noreply, map()}
-  def push(client, push_message = %APNS.PushMessage{}, opts \\ [], callback_fun \\ nil) do
+  @spec push(pid(), PushMessage.t, Keyword.t | nil,
+             ((PushMessage.t, Express.push_result) -> any()) | nil) :: {:noreply, map()}
+  def push(client, push_message, opts, callback_fun) do
     GenServer.cast(client, {:push, push_message, opts, callback_fun})
   end
 
@@ -118,7 +120,7 @@ defmodule Express.APNS.Client do
 
   def handle_cast({:push, push_message, opts, callback_fun},
                   %{connection: connection, monitors: monitors_pid} = state) do
-    worker_state = %APNS.Worker.State{
+    worker_state = %Worker.State{
       connection: connection,
       push_message: push_message,
       opts: opts,
@@ -129,7 +131,7 @@ defmodule Express.APNS.Client do
     new_workers_map = Map.put(state.workers, worker_pid, worker_state)
     new_state = %{state | workers: new_workers_map}
 
-    APNS.Worker.push(worker_pid, opts[:delay] || 0)
+    Worker.push(worker_pid, opts[:delay] || 0)
 
     {:noreply, new_state}
   end
@@ -140,7 +142,7 @@ defmodule Express.APNS.Client do
   end
   def handle_info({:DOWN, _, _, worker_pid, reason}, %{monitors: monitors_pid} = state) do
     error_message = """
-    [APNS client] APNS.Worker #{inspect(worker_pid)} is down: #{inspect(reason)}
+    [APNS supervisor] worker #{inspect(worker_pid)} is down: #{inspect(reason)}
     """
     LogMessage.run!(message: error_message)
 
@@ -148,9 +150,9 @@ defmodule Express.APNS.Client do
     {:noreply, state}
   end
 
-  @spec spawn_worker(pid(), APNS.Worker.State.t) :: pid()
+  @spec spawn_worker(pid(), Worker.State.t) :: pid()
   defp spawn_worker(monitors_pid, worker_state) do
-    {:ok, worker_pid} = APNS.Worker.start_link(worker_state)
+    {:ok, worker_pid} = Worker.start_link(worker_state)
 
     ref = Process.monitor(worker_pid)
     true = :ets.insert(monitors_pid, {worker_pid, ref})
@@ -166,7 +168,8 @@ defmodule Express.APNS.Client do
         true = :ets.delete(monitors_pid, pid)
       _ ->
         error_message = """
-        [APNS client] Could not remove APNS.Worker ref #{inspect(worker_pid)} from ETS
+        [APNS supervisor] Could not remove worker from ETS.
+        ref: #{inspect(worker_pid)} 
         """
         LogMessage.run!(message: error_message)
 

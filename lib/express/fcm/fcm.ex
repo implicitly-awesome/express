@@ -14,8 +14,8 @@ defmodule Express.FCM do
 
   @spec do_push(FCM.PushMessage.t, Keyword.t, fun()) :: {:noreply, map()}
   defp do_push(push_message, opts, callback_fun) do
-    :poolboy.transaction(pool_name(), fn(client) ->
-      FCM.Client.push(client, push_message, opts, callback_fun)
+    :poolboy.transaction(pool_name(), fn(supervisor) ->
+      FCM.Supervisor.push(supervisor, push_message, opts, callback_fun)
     end)
   end
 

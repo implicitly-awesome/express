@@ -6,11 +6,11 @@ config :logger,
 
 config :express,
        apns: [
-         mode: :prod,
-         cert_path: System.get_env("EXPRESS_APNS_CERT_PATH"),
-         key_path: System.get_env("EXPRESS_APNS_KEY_PATH")
+         mode: :dev,
+         cert_path: Path.expand("test/fixtures/test_apns_cert.pem"),
+         key_path: Path.expand("test/fixtures/test_apns_key.pem")
        ],
        fcm: [
-         api_key: System.get_env("EXPRESS_FCM_API_KEY"),
-         collapse_key: System.get_env("EXPRESS_FCM_COLLAPSE_KEY")
+         api_key: "your_api_key",
+         collapse_key: "your_collapse_key"
        ]

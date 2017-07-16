@@ -10,8 +10,8 @@ defmodule Express.APNS do
   @spec push(APNS.PushMessage.t, Keyword.t, ((APNS.PushMessage.t, any()) -> any()) | nil) :: {:noreply, map()}
   def push(push_message, opts \\ [], callback_fun \\ nil) do
     # TODO: if SSL congiguration setting were provided via options:
-    # * stop active clients that hold current connections (established wuth old settings)
-    # * start new clients with SSL configuration from the options
+    # * stop active supervisors that hold current connections (established wuth old settings)
+    # * start new supervisors with SSL configuration from the options
     # * send push message
     # else:
     # * send push message
@@ -26,15 +26,15 @@ defmodule Express.APNS do
 
   @spec stop_and_push(APNS.PushMessage.t, Keyword.t, fun()) :: {:noreply, map()}
   defp stop_and_push(push_message, opts, callback_fun) do
-    # TODO: get a client from poolboy, ask it for SSL configuration
+    # TODO: get a supervisor from poolboy, ask it for SSL configuration
     # compare whether SSL config contains same settings, if so - send push message,
-    # otherwise: kill all current clients from poolboy, start new and send push message
+    # otherwise: kill all current supervisors from poolboy, start new and send push message
     opts_map = Enum.into(opts, %{})
 
-    :poolboy.transaction(pool_name(), fn(client) ->
-      client_ssl_config = APNS.Client.current_ssl_config(client)
-      unless opts_equal?(opts_map, client_ssl_config) do
-        # TODO: somehow restart clients in poolboy
+    :poolboy.transaction(pool_name(), fn(supervisor) ->
+      supervisor_ssl_config = APNS.Supervisor.current_ssl_config(supervisor)
+      unless opts_equal?(opts_map, supervisor_ssl_config) do
+        # TODO: somehow restart supervisors in poolboy
       end
     end)
 
@@ -43,8 +43,8 @@ defmodule Express.APNS do
 
   @spec do_push(APNS.PushMessage.t, Keyword.t, fun()) :: {:noreply, map()}
   defp do_push(push_message, opts, callback_fun) do
-    :poolboy.transaction(pool_name(), fn(client) ->
-      APNS.Client.push(client, push_message, opts, callback_fun)
+    :poolboy.transaction(pool_name(), fn(supervisor) ->
+      APNS.Supervisor.push(supervisor, push_message, opts, callback_fun)
     end)
   end
 
