@@ -1,0 +1,9 @@
+/_build
+/cover
+/deps
+/doc
+/.fetch
+/log
+erl_crash.dump
+*.ez
+live_test.ex
