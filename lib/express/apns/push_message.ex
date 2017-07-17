@@ -4,7 +4,6 @@ defmodule Express.APNS.PushMessage do
   """
 
   alias Express.APNS.PushMessage.Aps
-  alias Express.Helpers
 
   @derive [Poison.Encoder]
 

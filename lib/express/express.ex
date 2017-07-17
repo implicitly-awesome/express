@@ -9,11 +9,13 @@ defmodule Express do
   @type push_result :: {:ok, %{status: pos_integer(), body: any()}} |
                         {:error, %{status: pos_integer(), body: any()}}
 
+  @type callback_fun :: ((PushMessage.t, Express.push_result) -> any())
+
   @doc """
   Pushes a message with options and callback function (which are optional).
   Returns a response from a provider (via callback function).
   """
   @callback push(APNS.PushMessage.t | FCM.PushMessage.t,
                  Keyword.t,
-                 ((APNS.PushMessage.t | FCM.PushMessage.t, push_result) -> any()) | nil) :: {:noreply, map()}
+                 callback_fun | nil) :: {:noreply, map()}
 end

@@ -24,7 +24,8 @@ defmodule Express.Mixfile do
       {:poolboy, "~> 1.5"},
       {:httpoison, "~> 0.12"},
       {:exop, "~> 0.4.4"},
-      {:mock, "~> 0.2.0", only: :test}
+      {:mock, "~> 0.2.0", only: :test},
+      {:credo, "~> 0.8", only: [:dev, :test], runtime: false}
     ]
   end
 end

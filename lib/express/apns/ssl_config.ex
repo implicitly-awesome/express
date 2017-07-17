@@ -15,7 +15,7 @@ defmodule Express.APNS.SSLConfig do
       opts[:cert] ||
       cert(config_cert_path()) ||
       decode_content(config_cert(), :cert)
-    key = 
+    key =
       opts[:key] ||
       key(config_key_path()) ||
       decode_content(config_key(), :key)

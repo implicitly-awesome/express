@@ -23,9 +23,7 @@ defmodule Express.APNS.Worker do
   alias Express.Network.HTTP2.Connection
   alias Express.APNS.PushMessage
 
-  @spec start_link(HTTP2.Connection.t, State.t) :: {:ok, pid} |
-                                                   :ignore |
-                                                   {:error, {:already_started, pid()} | any()}
+  @spec start_link(HTTP2.Connection.t, State.t) :: GenServer.on_start
   def start_link(connection, state) do
     state = %State{state | connection: connection}
     GenServer.start_link(__MODULE__, {:ok, state})
@@ -76,7 +74,8 @@ defmodule Express.APNS.Worker do
     LogMessage.run!(message: error_message, type: :warn)
   end
 
-  @spec do_push(%{push_message: PushMessage.t, connection: Connection.t}) :: {:noreply, map()}
+  @spec do_push(%{push_message: PushMessage.t,
+                  connection: Connection.t}) :: {:noreply, map()}
   defp do_push(%{push_message: %{token: token} = push_message,
                  connection: connection}) do
     {:ok, json} = Poison.encode(push_message)
@@ -107,10 +106,10 @@ defmodule Express.APNS.Worker do
 
   @spec handle_response({list(), String.t},
                         map(),
-                        ((PushMessage.t, Express.push_result) -> any()) | nil) :: {:noreply, map()}
+                        Express.callback_fun | nil) :: {:noreply, map()}
   defp handle_response({headers, body} = response, state, callback_fun)
        when (is_function(callback_fun) or is_nil(callback_fun)) do
-    result = 
+    result =
       case status = fetch_status(headers) do
         200 ->
           if Mix.env == :dev do

@@ -13,10 +13,11 @@ defmodule Express.Network.HTTP2.Client do
   Открывает сокет для указанного провайдера, конфигурации и количества попыток.
   Establishes 
   """
-  @callback open_socket(atom(), map(), pos_integer()) :: {:ok, pid()} |
-                                                         {:error, :open_socket, :timeout} |
-                                                         {:error, :ssl_config, :certificate_missed} |
-                                                         {:error, :ssl_config, :rsa_key_missed}
+  @callback open_socket(atom(), map(), pos_integer()) ::
+    {:ok, pid()} |
+    {:error, :open_socket, :timeout} |
+    {:error, :ssl_config, :certificate_missed} |
+    {:error, :ssl_config, :rsa_key_missed}
 
   @doc """
   Посылает запрос по сокету с заголовками и payload.

@@ -80,55 +80,42 @@ defmodule Express.FCM.Worker do
     ]
 
     payload = Poison.encode!(push_message)
-    result = HTTPoison.post("#{@uri_path}", payload, headers)
 
-    case result do
-      {:ok, response = %HTTPoison.Response{status_code: 200 = status,
-                                           body: body}} ->
-        if Mix.env == :dev do
-          LogMessage.run!(message: payload, type: :info)
-          LogMessage.run!(message: inspect(response), type: :info)
-        end
+    result =
+      case HTTPoison.post("#{@uri_path}", payload, headers) do
+        {:ok, response = %HTTPoison.Response{status_code: 200 = status,
+                                            body: body}} ->
+          if Mix.env == :dev do
+            LogMessage.run!(message: payload, type: :info)
+            LogMessage.run!(message: inspect(response), type: :info)
+          end
+          handle_response(push_message, {status, body})
+        {:ok, %HTTPoison.Response{status_code: 401 = status, body: body}} ->
+          error_message = "[FCM worker] Unauthorized API key."
+          LogMessage.run!(message: error_message)
+          {:error, %{status: status, body: body}}
+        {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+          log_error({status, body}, push_message)
+          {:error, %{status: status, body: body}}
+        {:error, error} ->
+          error_message = """
+          [FCM worker] HTTPoison could not handle a request.
+          Error: #{inspect(error)}
+          """
+          LogMessage.run!(message: error_message)
+          {:error, :http_error}
+        _ ->
+          error_message = "[FCM worker] Unhandled error."
+          LogMessage.run!(message: error_message)
+          {:error, :unhandled_error}
+      end
 
-        handle_response(push_message, {status, body}, callback_fun)
-      {:ok, %HTTPoison.Response{status_code: 401 = status, body: body}} ->
-        error_message = "[FCM worker] Unauthorized API key."
-        LogMessage.run!(message: error_message)
-
-        if callback_fun do
-          callback_fun.(push_message, {:error, %{status: status, body: body}})
-        end
-      {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
-        log_error({status, body}, push_message)
-
-        if callback_fun do
-          callback_fun.(push_message, {:error, %{status: status, body: body}})
-        end
-      {:error, error} ->
-        error_message = """
-        [FCM worker] HTTPoison could not handle a request.
-        Error: #{inspect(error)}
-        """
-        LogMessage.run!(message: error_message)
-
-        if callback_fun do
-          callback_fun.(push_message, {:error, :http_error})
-        end
-      _ ->
-        error_message = "[FCM worker] Unhandled error."
-        LogMessage.run!(message: error_message)
-
-        if callback_fun do
-          callback_fun.(push_message, {:error, :unhandled_error})
-        end
-    end
+    if callback_fun, do: callback_fun.(push_message, result)
   end
   def do_push(_state), do: :nothing
 
-  @spec handle_response(PushMessage.t,
-                        {String.t, String.t},
-                        ((PushMessage.t, Express.push_result) -> any()) | nil) :: :ok
-  defp handle_response(push_message, {status, body}, callback_fun) do
+  @spec handle_response(PushMessage.t, {String.t, String.t}) :: :ok
+  defp handle_response(push_message, {status, body}) do
     errors =
       body
       |> Poison.decode!
@@ -136,20 +123,15 @@ defmodule Express.FCM.Worker do
       |> Enum.map(&(handle_result(&1)))
       |> Enum.reject(&(&1 == :ok))
 
-    result =
-      if Enum.any?(errors) do
-        Enum.each(errors, fn {:error, error_message} ->
-          log_error({status, error_message}, push_message)
-        end)
+    if Enum.any?(errors) do
+      Enum.each(errors, fn {:error, error_message} ->
+        log_error({status, error_message}, push_message)
+      end)
 
-        {:error, %{status: status, body: body}}
-      else
-        {:ok, %{status: status, body: body}}
-      end
-
-    if callback_fun, do: callback_fun.(push_message, result)
-
-    :ok
+      {:error, %{status: status, body: body}}
+    else
+      {:ok, %{status: status, body: body}}
+    end
   end
 
   @spec handle_result(map()) :: :ok | {:error, String.t}

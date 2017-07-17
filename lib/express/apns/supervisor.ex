@@ -25,7 +25,7 @@ defmodule Express.APNS.Supervisor do
   Invokes `callback_fun` function after a response.
   """
   @spec push(pid(), PushMessage.t, Keyword.t | nil,
-             ((PushMessage.t, Express.push_result) -> any()) | nil) :: {:noreply, map()}
+             Express.callback_fun | nil) :: {:noreply, map()}
   def push(supervisor, push_message, opts, callback_fun) do
     worker_state =
       %Worker.State{

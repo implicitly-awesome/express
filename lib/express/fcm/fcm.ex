@@ -7,7 +7,8 @@ defmodule Express.FCM do
 
   alias Express.FCM
 
-  @spec push(FCM.PushMessage.t, Keyword.t, ((FCM.PushMessage.t, any()) -> any()) | nil) :: {:noreply, map()}
+  @spec push(FCM.PushMessage.t, Keyword.t, Express.callback_fun | nil) ::
+    {:noreply, map()}
   def push(push_message, opts \\ [], callback_fun \\ nil) do
     do_push(push_message, opts, callback_fun)
   end

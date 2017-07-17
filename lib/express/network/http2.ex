@@ -10,7 +10,8 @@ defmodule Express.Network.HTTP2 do
   Establishes a connection for `provider` with provided `ssl_config` and `client` which maintains the connection.
   Returns the connection.
   """
-  @spec connect(Client.t, atom(), APNS.SSLConfig.t) :: {:ok, Connection.t} | {:error, any()}
+  @spec connect(Client.t, atom(), APNS.SSLConfig.t) :: {:ok, Connection.t} |
+                                                       {:error, any()}
   def connect(client, provider, ssl_config) do
     case client.open_socket(provider, ssl_config, 0) do
       {:ok, socket} ->
