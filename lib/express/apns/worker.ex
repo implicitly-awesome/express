@@ -23,10 +23,13 @@ defmodule Express.APNS.Worker do
   alias Express.Network.HTTP2.Connection
   alias Express.APNS.PushMessage
 
-  @spec start_link(State.t) :: {:ok, pid} |
-                               :ignore |
-                               {:error, {:already_started, pid()} | any()}
-  def start_link(state), do: GenServer.start_link(__MODULE__, {:ok, state})
+  @spec start_link(HTTP2.Connection.t, State.t) :: {:ok, pid} |
+                                                   :ignore |
+                                                   {:error, {:already_started, pid()} | any()}
+  def start_link(connection, state) do
+    state = %State{state | connection: connection}
+    GenServer.start_link(__MODULE__, {:ok, state})
+  end
 
   def init({:ok, state}), do: {:ok, state}
 

@@ -3,8 +3,9 @@ defmodule Express.Application do
 
   use Application
 
-  alias Express.Network.HTTP2
-  alias Express.APNS
+  alias Express.Network.HTTP2.{ChatterboxClient, Connection}
+  alias Express.Operations.EstablishHTTP2Connection
+  alias Express.APNS.SSLConfig
 
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
@@ -27,11 +28,12 @@ defmodule Express.Application do
   end
   defp do_start(_) do
     children = [
-      :poolboy.child_spec(apns_pool_name(), apns_poolboy_config(), {
-        HTTP2.ChatterboxClient,
-        APNS.SSLConfig.new()
-      }),
-      :poolboy.child_spec(fcm_pool_name(), fcm_poolboy_config(), [])
+      :poolboy.child_spec(apns_pool_name(),
+                          apns_poolboy_config(),
+                          apns_http2_connection()),
+      :poolboy.child_spec(fcm_pool_name(),
+                          fcm_poolboy_config(),
+                          [])
     ]
 
     opts = [
@@ -60,5 +62,18 @@ defmodule Express.Application do
   def fcm_pool_name do
     [{:name, {_, name}} | _] = fcm_poolboy_config()
     name
+  end
+
+  @spec apns_http2_connection :: Connection.t | nil
+  defp apns_http2_connection do
+    params = [
+      http2_client: ChatterboxClient,
+      ssl_config: SSLConfig.new()
+    ]
+
+    case EstablishHTTP2Connection.run(params) do
+      {:ok, connection} -> connection
+      _ -> nil
+    end
   end
 end
