@@ -5,14 +5,16 @@ defmodule Express.FCM.Supervisor do
 
   use Supervisor
 
-  alias Express.FCM.{Worker, PushMessage}
-  alias Express.Operations.LogMessage
+  alias Express.FCM
+  alias Express.Operations
 
-  def start_link([]), do: Supervisor.start_link(__MODULE__, :ok)
+  def start_link(worker_module) do
+    Supervisor.start_link(__MODULE__, {:ok, worker_module})
+  end
 
-  def init(:ok) do
+  def init({:ok, worker_module}) do
     children = [
-      worker(Worker, [], restart: :temporary)
+      worker(worker_module, [], restart: :temporary)
     ]
 
     supervise(children, strategy: :simple_one_for_one)
@@ -22,28 +24,29 @@ defmodule Express.FCM.Supervisor do
   Sends `push_message` with the `supervisor`.
   Invokes `callback_fun` function after a response.
   """
-  @spec push(pid(), PushMessage.t, Keyword.t | nil,
+  @spec push(pid(), module(), FCM.PushMessage.t, Keyword.t | nil,
              Express.callback_fun | nil) :: {:noreply, map()}
-  def push(supervisor, push_message, opts, callback_fun) do
+  def push(supervisor, worker_module, push_message, opts, callback_fun) do
     worker_state =
-      %Worker.State{
-        push_message: push_message,
-        opts: opts,
-        callback_fun: callback_fun
-      }
+      Module.
+      concat([worker_module, State]).
+      new(push_operation: Operations.FCM.Push,
+          push_message: push_message,
+          opts: opts,
+          callback_fun: callback_fun)
 
     delay = opts[:delay] || 0
 
     case Supervisor.start_child(supervisor, [worker_state]) do
       {:ok, worker} ->
-        Worker.push(worker, delay)
+        worker_module.push(worker, delay)
       {:error, reason} ->
         error_message = """
         [FCM supervisor] Failed to start worker.
         Reason: #{inspect(reason)}
         State: #{inspect(worker_state)}
         """
-        LogMessage.run!(message: error_message)
+        Operations.LogMessage.run!(message: error_message)
     end
   end
 end

@@ -6,7 +6,6 @@ defmodule Express.FCM.Worker do
   use GenServer
 
   alias Express.FCM.PushMessage
-  alias Express.Operations.LogMessage
 
   defmodule State do
     @moduledoc """
@@ -14,15 +13,24 @@ defmodule Express.FCM.Worker do
     """
 
     @type t :: %__MODULE__{
+      push_operation: module(),
       push_message: PushMessage.t,
       opts: Keyword.t,
       callback_fun: ((PushMessage.t, any()) -> any()) | nil
     }
 
-    defstruct ~w(push_message opts callback_fun)a
-  end
+    defstruct ~w(push_operation push_message opts callback_fun)a
 
-  @uri_path "https://fcm.googleapis.com/fcm/send"
+    @spec new(Keyword.t) :: __MODULE__.t
+    def new(args) do
+      %__MODULE__{
+        push_operation: Keyword.get(args, :push_operation),
+        push_message: Keyword.get(args, :push_message),
+        opts: Keyword.get(args, :opts),
+        callback_fun: Keyword.get(args, :callback_fun)
+      }
+    end
+  end
 
   @spec start_link(State.t) :: {:ok, pid} |
                                :ignore |
@@ -40,110 +48,26 @@ defmodule Express.FCM.Worker do
                                       :nosuspend |
                                       true
   def push(worker, delay \\ 0)
+  def push(worker, delay) when is_integer(delay) and delay >= 1 do
+    Process.send_after(worker, :push, delay * 1000)
+  end
   def push(worker, delay) when is_integer(delay) do
-    if delay >= 1 do
-      Process.send_after(worker, :push, delay * 1000)
-    else
-      Process.send(worker, :push, [])
-    end
+    Process.send(worker, :push, [])
   end
   def push(worker, _delay) do
     Process.exit(worker, :normal)
   end
 
-  def handle_info(:push, state) do
-    do_push(state)
+  def handle_info(:push, %{push_operation: push_operation,
+                           push_message: push_message,
+                           opts: opts,
+                           callback_fun: callback_fun} = state) do
+    push_operation.run(
+      push_message: push_message,
+      opts: opts,
+      callback_fun: callback_fun
+    )
+
     {:stop, :normal, state}
-  end
-
-  @doc """
-  Returns api-key for FCM (resolved from provided `opts`).
-  """
-  @spec api_key_for(Keyword.t) :: String.t
-  def api_key_for(opts \\ []) do
-    opts[:api_key] || Application.get_env(:express, :fcm)[:api_key]
-  end
-
-  @doc """
-  Sends push_message synchronously to FCM with specified api_key.
-  Invokes callback_fun finction after response receive. 
-  """
-  @spec do_push(State.t) :: any()
-  def do_push(%{push_message: push_message,
-                opts: opts,
-                callback_fun: callback_fun}) do
-    api_key = api_key_for(opts)
-
-    headers = [
-      {"Content-Type", "application/json"},
-      {"Authorization", "key=#{api_key}"}
-    ]
-
-    payload = Poison.encode!(push_message)
-
-    result =
-      case HTTPoison.post("#{@uri_path}", payload, headers) do
-        {:ok, response = %HTTPoison.Response{status_code: 200 = status,
-                                            body: body}} ->
-          if Mix.env == :dev do
-            LogMessage.run!(message: payload, type: :info)
-            LogMessage.run!(message: inspect(response), type: :info)
-          end
-          handle_response(push_message, {status, body})
-        {:ok, %HTTPoison.Response{status_code: 401 = status, body: body}} ->
-          error_message = "[FCM worker] Unauthorized API key."
-          LogMessage.run!(message: error_message)
-          {:error, %{status: status, body: body}}
-        {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
-          log_error({status, body}, push_message)
-          {:error, %{status: status, body: body}}
-        {:error, error} ->
-          error_message = """
-          [FCM worker] HTTPoison could not handle a request.
-          Error: #{inspect(error)}
-          """
-          LogMessage.run!(message: error_message)
-          {:error, :http_error}
-        _ ->
-          error_message = "[FCM worker] Unhandled error."
-          LogMessage.run!(message: error_message)
-          {:error, :unhandled_error}
-      end
-
-    if callback_fun, do: callback_fun.(push_message, result)
-  end
-  def do_push(_state), do: :nothing
-
-  @spec handle_response(PushMessage.t, {String.t, String.t}) :: :ok
-  defp handle_response(push_message, {status, body}) do
-    errors =
-      body
-      |> Poison.decode!
-      |> Map.get("results", [])
-      |> Enum.map(&(handle_result(&1)))
-      |> Enum.reject(&(&1 == :ok))
-
-    if Enum.any?(errors) do
-      Enum.each(errors, fn {:error, error_message} ->
-        log_error({status, error_message}, push_message)
-      end)
-
-      {:error, %{status: status, body: body}}
-    else
-      {:ok, %{status: status, body: body}}
-    end
-  end
-
-  @spec handle_result(map()) :: :ok | {:error, String.t}
-  defp handle_result(%{"error" => message}), do: {:error, message}
-  defp handle_result(_), do: :ok
-
-  @spec log_error({String.t, String.t}, PushMessage.t) :: :ok | {:error, any()}
-  defp log_error({status, reason}, push_message) do
-    error_message = """
-    [FCM worker] FCM: #{inspect(reason)}[#{status}]\n#{inspect(push_message)}
-    """
-
-    LogMessage.run!(message: error_message, type: :warn)
   end
 end

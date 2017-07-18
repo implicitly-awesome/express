@@ -33,7 +33,7 @@ defmodule Express.Application do
                           apns_http2_connection()),
       :poolboy.child_spec(fcm_pool_name(),
                           fcm_poolboy_config(),
-                          [])
+                          Express.FCM.Worker)
     ]
 
     opts = [

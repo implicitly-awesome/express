@@ -6,6 +6,7 @@ defmodule Express.FCM do
   @behaviour Express
 
   alias Express.FCM
+  alias Express.FCM.Worker
 
   @spec push(FCM.PushMessage.t, Keyword.t, Express.callback_fun | nil) ::
     {:noreply, map()}
@@ -16,7 +17,7 @@ defmodule Express.FCM do
   @spec do_push(FCM.PushMessage.t, Keyword.t, fun()) :: {:noreply, map()}
   defp do_push(push_message, opts, callback_fun) do
     :poolboy.transaction(pool_name(), fn(supervisor) ->
-      FCM.Supervisor.push(supervisor, push_message, opts, callback_fun)
+      FCM.Supervisor.push(supervisor, Worker, push_message, opts, callback_fun)
     end)
   end
 
