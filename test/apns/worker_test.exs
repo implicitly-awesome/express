@@ -1,9 +1,10 @@
-defmodule FCM.WorkerTest do
+defmodule APNS.WorkerTest do
   @moduledoc false
 
   use ExUnit.Case, async: true
 
-  alias Express.FCM.{Worker, Worker.State, PushMessage}
+  alias Express.Network.HTTP2
+  alias Express.APNS.{SSLConfig, Worker, Worker.State, PushMessage}
 
   defmodule FakePushOperation do
     @moduledoc false
@@ -12,27 +13,32 @@ defmodule FCM.WorkerTest do
   end
 
   setup do
-    registration_id = "your_registration_id"
-    notification = %PushMessage.Notification{title: "Title", body: "Body"}
-    push_message = %PushMessage{
-      registration_ids: [registration_id],
-      notification: notification,
-      data: %{}
-    }
+    token = "device_token"
+    alert = %PushMessage.Alert{title: "Title", body: "Body"}
+    aps = %PushMessage.Aps{alert: alert}
+    push_message = %PushMessage{token: token, aps: aps, acme: %{}}
+    ssl_config = SSLConfig.new()
+    connection =
+      %HTTP2.Connection{client: nil,
+                        provider: :apns,
+                        socket: nil,
+                        ssl_config: ssl_config}
 
     worker_state =
       State.new(
         push_operation: FakePushOperation,
+        connection: connection,
         push_message: push_message,
         opts: [],
         callback_fun: fn(_, _) -> :pushed end
       )
 
-    {:ok, worker_state: worker_state}
+    {:ok, connection: connection, worker_state: worker_state}
   end
 
   describe "push/2" do
     test "with delay == 0 sends :push immediately", %{
+      connection: connection,
       worker_state: worker_state
     } do
       start_time = :erlang.timestamp
@@ -44,7 +50,7 @@ defmodule FCM.WorkerTest do
         end
       })
 
-      {:ok, worker} = Worker.start_link(worker_state)
+      {:ok, worker} = Worker.start_link(connection, worker_state)
       ref = Process.monitor(worker)
       delay = 0
 
@@ -56,6 +62,7 @@ defmodule FCM.WorkerTest do
 
   describe "push/2" do
     test "with delay > 0 sends :push after that delay", %{
+      connection: connection,
       worker_state: worker_state
     } do
       start_time = :erlang.timestamp
@@ -66,7 +73,7 @@ defmodule FCM.WorkerTest do
         end
       })
 
-      {:ok, worker} = Worker.start_link(worker_state)
+      {:ok, worker} = Worker.start_link(connection, worker_state)
       ref = Process.monitor(worker)
       delay = 1
 

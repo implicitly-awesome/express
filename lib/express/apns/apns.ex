@@ -6,6 +6,7 @@ defmodule Express.APNS do
   @behaviour Express
 
   alias Express.APNS
+  alias Express.APNS.Worker
 
   @spec push(APNS.PushMessage.t, Keyword.t, Express.callback_fun | nil) ::
     {:noreply, map()}
@@ -16,7 +17,7 @@ defmodule Express.APNS do
   @spec do_push(APNS.PushMessage.t, Keyword.t, fun()) :: {:noreply, map()}
   defp do_push(push_message, opts, callback_fun) do
     :poolboy.transaction(pool_name(), fn(supervisor) ->
-      APNS.Supervisor.push(supervisor, push_message, opts, callback_fun)
+      APNS.Supervisor.push(supervisor, Worker, push_message, opts, callback_fun)
     end)
   end
 

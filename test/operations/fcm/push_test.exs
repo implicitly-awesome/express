@@ -1,7 +1,7 @@
 defmodule Operations.FCM.PushTest do
   @moduledoc false
 
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   import Mock
 

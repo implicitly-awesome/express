@@ -5,8 +5,8 @@ defmodule Express.FCM.Supervisor do
 
   use Supervisor
 
-  alias Express.FCM
-  alias Express.Operations
+  alias Express.FCM.PushMessage
+  alias Express.Operations.{LogMessage, FCM.Push}
 
   def start_link(worker_module) do
     Supervisor.start_link(__MODULE__, {:ok, worker_module})
@@ -24,13 +24,13 @@ defmodule Express.FCM.Supervisor do
   Sends `push_message` with the `supervisor`.
   Invokes `callback_fun` function after a response.
   """
-  @spec push(pid(), module(), FCM.PushMessage.t, Keyword.t | nil,
+  @spec push(pid(), module(), PushMessage.t, Keyword.t | nil,
              Express.callback_fun | nil) :: {:noreply, map()}
   def push(supervisor, worker_module, push_message, opts, callback_fun) do
     worker_state =
       Module.
       concat([worker_module, State]).
-      new(push_operation: Operations.FCM.Push,
+      new(push_operation: Push,
           push_message: push_message,
           opts: opts,
           callback_fun: callback_fun)
@@ -46,7 +46,7 @@ defmodule Express.FCM.Supervisor do
         Reason: #{inspect(reason)}
         State: #{inspect(worker_state)}
         """
-        Operations.LogMessage.run!(message: error_message)
+        LogMessage.run!(message: error_message)
     end
   end
 end

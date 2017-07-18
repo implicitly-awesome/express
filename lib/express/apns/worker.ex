@@ -3,25 +3,38 @@ defmodule Express.APNS.Worker do
   Incapsulates work with APNS logic. Exists temporary: until work with APNS finished.
   """
 
+  use GenServer
+  alias Express.Operations.LogMessage
+
+  alias Express.Network.HTTP2
+  alias Express.APNS.PushMessage
+
   defmodule State do
     @moduledoc """
     Defines APNS worker state structure.
     """
 
-    @type t :: %__MODULE__{connection: HTTP2.Connection.t,
-                           push_message: APNS.PushMessage.t,
-                           opts: Keyword.t,
-                           callback_fun: fun()}
+    @type t :: %__MODULE__{
+      push_operation: module(),
+      connection: HTTP2.Connection.t,
+      push_message: APNS.PushMessage.t,
+      opts: Keyword.t,
+      callback_fun: fun()
+    }
 
-    defstruct ~w(connection push_message opts callback_fun)a
+    defstruct ~w(push_operation connection push_message opts callback_fun)a
+
+    @spec new(Keyword.t) :: __MODULE__.t
+    def new(args) do
+      %__MODULE__{
+        push_operation: Keyword.get(args, :push_operation),
+        connection: Keyword.get(args, :connection),
+        push_message: Keyword.get(args, :push_message),
+        opts: Keyword.get(args, :opts),
+        callback_fun: Keyword.get(args, :callback_fun)
+      }
+    end
   end
-
-  use GenServer
-  alias Express.Operations.LogMessage
-
-  alias Express.Network.HTTP2
-  alias Express.Network.HTTP2.Connection
-  alias Express.APNS.PushMessage
 
   @spec start_link(HTTP2.Connection.t, State.t) :: GenServer.on_start
   def start_link(connection, state) do
@@ -40,19 +53,28 @@ defmodule Express.APNS.Worker do
                                       :nosuspend |
                                       true
   def push(worker, delay \\ 0)
+  def push(worker, delay) when is_integer(delay) and delay >= 1 do
+    Process.send_after(worker, :push, delay * 1000)
+  end
   def push(worker, delay) when is_integer(delay) do
-    if delay >= 1 do
-      Process.send_after(worker, :push, delay * 1000)
-    else
-      Process.send(worker, :push, [])
-    end
+    Process.send(worker, :push, [])
   end
   def push(worker, _delay) do
     Process.exit(worker, :normal)
   end
 
-  def handle_info(:push, state) do
-    do_push(state)
+  def handle_info(:push, %{push_operation: push_operation,
+                           connection: connection,
+                           push_message: push_message,
+                           opts: opts,
+                           callback_fun: callback_fun} = state) do
+    push_operation.run(
+      push_message: push_message,
+      connection: connection,
+      opts: opts,
+      callback_fun: callback_fun
+    )
+
     {:stop, :normal, state}
   end
 
@@ -65,44 +87,6 @@ defmodule Express.APNS.Worker do
 
     {:stop, :normal, state}
   end
-
-  @spec log_error({String.t, String.t}, PushMessage.t) :: :ok | {:error, any()}
-  defp log_error({status, reason}, push_message) do
-    error_message = """
-    [APNS worker] #{inspect(reason)}[#{status}]\n#{inspect(push_message)}
-    """
-    LogMessage.run!(message: error_message, type: :warn)
-  end
-
-  @spec do_push(%{push_message: PushMessage.t,
-                  connection: Connection.t}) :: {:noreply, map()}
-  defp do_push(%{push_message: %{token: token} = push_message,
-                 connection: connection}) do
-    {:ok, json} = Poison.encode(push_message)
-
-    if Mix.env == :dev, do: LogMessage.run!(message: json, type: :info)
-
-    headers = [
-      {":method", "POST"},
-      {":path", "/3/device/#{token}"},
-      {"content-length", "#{byte_size(json)}"}
-    ]
-
-    headers =
-      if push_message.topic do
-        headers ++ [{"apns-topic", push_message.topic}]
-      else
-        headers
-      end
-
-    HTTP2.send_request(connection, headers, json)
-  end
-
-  @spec fetch_status(list()) :: String.t | nil
-  defp fetch_status([]), do: nil
-  defp fetch_status([{":status", status} | _tail]), do: String.to_integer(status)
-  defp fetch_status([_head | tail]), do: fetch_status(tail)
-  defp fetch_status(_), do: nil
 
   @spec handle_response({list(), String.t},
                         map(),
@@ -130,11 +114,26 @@ defmodule Express.APNS.Worker do
   end
   defp handle_response(_, _, _), do: :nothing
 
+  @spec fetch_status(list()) :: String.t | nil
+  defp fetch_status([]), do: nil
+  defp fetch_status([{":status", status} | _tail]), do: String.to_integer(status)
+  defp fetch_status([_head | tail]), do: fetch_status(tail)
+  defp fetch_status(_), do: nil
+
   @spec fetch_reason(String.t) :: String.t
   defp fetch_reason(nil), do: nil
   defp fetch_reason(""),  do: ""
   defp fetch_reason(body) do
     {:ok, body} = Poison.decode(body)
     Macro.underscore(body["reason"])
+  end
+
+  @spec log_error({String.t, String.t}, PushMessage.t) :: :ok | {:error, any()}
+  defp log_error({status, reason}, push_message) do
+    error_message = """
+    [APNS worker] APNS: #{inspect(reason)}[#{status}]\n#{inspect(push_message)}
+    """
+
+    LogMessage.run!(message: error_message, type: :warn)
   end
 end

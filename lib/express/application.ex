@@ -30,7 +30,7 @@ defmodule Express.Application do
     children = [
       :poolboy.child_spec(apns_pool_name(),
                           apns_poolboy_config(),
-                          apns_http2_connection()),
+                          [apns_http2_connection(), Express.APNS.Worker]),
       :poolboy.child_spec(fcm_pool_name(),
                           fcm_poolboy_config(),
                           Express.FCM.Worker)

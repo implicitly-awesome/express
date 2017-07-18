@@ -5,16 +5,16 @@ defmodule Express.APNS.Supervisor do
 
   use Supervisor
 
-  alias Express.APNS.{Worker, PushMessage}
-  alias Express.Operations.LogMessage
+  alias Express.APNS.PushMessage
+  alias Express.Operations.{LogMessage, APNS.Push}
 
-  def start_link(connection) do
-    Supervisor.start_link(__MODULE__, {:ok, connection})
+  def start_link([connection, worker_module]) do
+    Supervisor.start_link(__MODULE__, {:ok, connection, worker_module})
   end
 
-  def init({:ok, connection}) do
+  def init({:ok, connection, worker_module}) do
     children = [
-      worker(Worker, [connection], restart: :temporary)
+      worker(worker_module, [connection], restart: :temporary)
     ]
 
     supervise(children, strategy: :simple_one_for_one)
@@ -24,21 +24,22 @@ defmodule Express.APNS.Supervisor do
   Sends `push_message` with the `supervisor`.
   Invokes `callback_fun` function after a response.
   """
-  @spec push(pid(), PushMessage.t, Keyword.t | nil,
+  @spec push(pid(), module(), PushMessage.t, Keyword.t | nil,
              Express.callback_fun | nil) :: {:noreply, map()}
-  def push(supervisor, push_message, opts, callback_fun) do
+  def push(supervisor, worker_module, push_message, opts, callback_fun) do
     worker_state =
-      %Worker.State{
-        push_message: push_message,
-        opts: opts,
-        callback_fun: callback_fun
-      }
+      Module.
+      concat([worker_module, State]).
+      new(push_operation: Push,
+          push_message: push_message,
+          opts: opts,
+          callback_fun: callback_fun)
 
     delay = opts[:delay] || 0
 
     case Supervisor.start_child(supervisor, [worker_state]) do
       {:ok, worker} ->
-        Worker.push(worker, delay)
+        worker_module.push(worker, delay)
       {:error, reason} ->
         error_message = """
         [APNS supervisor] Failed to start worker.
