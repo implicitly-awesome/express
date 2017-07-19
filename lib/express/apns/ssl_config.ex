@@ -27,35 +27,43 @@ defmodule Express.APNS.SSLConfig do
     }
   end
 
+  @doc "Returns apns mode from configuration"
   @spec config_mode() :: atom() | String.t | nil
-  defp config_mode, do: Application.get_env(:express, :apns)[:mode]
+  def config_mode, do: Application.get_env(:express, :apns)[:mode]
 
+  @doc "Returns SSL certificate path from configuration"
   @spec config_cert_path() :: String.t | nil
-  defp config_cert_path, do: Application.get_env(:express, :apns)[:cert_path]
+  def config_cert_path, do: Application.get_env(:express, :apns)[:cert_path]
 
+  @doc "Returns SSL key path from configuration"
   @spec config_key_path() :: String.t | nil
-  defp config_key_path, do: Application.get_env(:express, :apns)[:key_path]
+  def config_key_path, do: Application.get_env(:express, :apns)[:key_path]
 
+  @doc "Returns SSL certificate from configuration"
   @spec config_cert() :: String.t | nil
-  defp config_cert, do: Application.get_env(:express, :apns)[:cert]
+  def config_cert, do: Application.get_env(:express, :apns)[:cert]
 
+  @doc "Returns SSL key from configuration"
   @spec config_key() :: String.t | nil
-  defp config_key, do: Application.get_env(:express, :apns)[:key]
+  def config_key, do: Application.get_env(:express, :apns)[:key]
 
+  @doc "Returns SSL certificate by file path"
   @spec cert(String.t) :: binary()
-  defp cert(file_path) when is_binary(file_path) do
+  def cert(file_path) when is_binary(file_path) do
     file_path |> read_file |> decode_content(:cert)
   end
-  defp cert(_), do: nil
+  def cert(_), do: nil
 
+  @doc "Returns SSL key by file path"
   @spec key(String.t) :: binary()
-  defp key(file_path) when is_binary(file_path) do
+  def key(file_path) when is_binary(file_path) do
     file_path |> read_file |> decode_content(:key)
   end
-  defp key(_), do: nil
+  def key(_), do: nil
 
+  @doc "Returns a file content by file path"
   @spec read_file(String.t) :: String.t | nil
-  defp read_file(file_path) when is_binary(file_path) do
+  def read_file(file_path) when is_binary(file_path) do
     with true <- :filelib.is_file(file_path),
          full_file_path <- Path.expand(file_path),
          {:ok, content} <- File.read(full_file_path) do
@@ -65,8 +73,9 @@ defmodule Express.APNS.SSLConfig do
          end
   end
 
+  @doc "Returns either SSL certificate or SSL key from a file content"
   @spec decode_content(String.t, :cert | :key) :: binary() | nil
-  defp decode_content(file_content, type) when is_binary(file_content) and is_atom(type) do
+  def decode_content(file_content, type) when is_binary(file_content) and is_atom(type) do
     file_content = file_content |> String.replace("\\n", "\n")
     try do
       case type do
@@ -78,17 +87,19 @@ defmodule Express.APNS.SSLConfig do
       _ -> nil
     end
   end
-  defp decode_content(_file_content, _type), do: nil
+  def decode_content(_file_content, _type), do: nil
 
+  @doc "Returns SSL certificate from pem"
   @spec fetch_cert(list()) :: binary() | nil
-  defp fetch_cert([]), do: nil
-  defp fetch_cert([{:Certificate, cert, _} | _tail]), do: cert
-  defp fetch_cert([_head | tail]), do: fetch_cert(tail)
-  defp fetch_cert(_), do: nil
+  def fetch_cert([]), do: nil
+  def fetch_cert([{:Certificate, cert, _} | _tail]), do: cert
+  def fetch_cert([_head | tail]), do: fetch_cert(tail)
+  def fetch_cert(_), do: nil
 
+  @doc "Returns SSL key from pem"
   @spec fetch_key(list()) :: binary() | nil
-  defp fetch_key([]), do: nil
-  defp fetch_key([{:RSAPrivateKey, key, _} | _tail]), do: {:RSAPrivateKey, key}
-  defp fetch_key([_head | tail]), do: fetch_key(tail)
-  defp fetch_key(_), do: nil
+  def fetch_key([]), do: nil
+  def fetch_key([{:RSAPrivateKey, key, _} | _tail]), do: {:RSAPrivateKey, key}
+  def fetch_key([_head | tail]), do: fetch_key(tail)
+  def fetch_key(_), do: nil
 end
