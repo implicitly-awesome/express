@@ -1,15 +1,25 @@
 defmodule Express.Mixfile do
   use Mix.Project
 
+  @description """
+  Library for sending push notifications.
+  Supports Apple APNS and Google FCM services.
+  """
+
   def project do
-    [app: :express,
-     version: "1.0.0",
-     elixir: "~> 1.4",
-     build_embedded: Mix.env == :prod,
-     start_permanent: Mix.env == :prod,
-     name: "Express",
-     source_url: "https://github.com/madeinussr/express",
-     deps: deps()]
+    [
+      app: :express,
+      version: "1.0.0",
+      elixir: "~> 1.4",
+      name: "Express",
+      description: @description,
+      package: package(),
+      deps: deps(),
+      source_url: "https://github.com/madeinussr/express",
+      docs: [extras: ["README.md"]],
+      build_embedded: Mix.env == :prod,
+      start_permanent: Mix.env == :prod
+    ]
   end
 
   def application do
@@ -27,6 +37,15 @@ defmodule Express.Mixfile do
       {:mock, "~> 0.2.0", only: :test},
       {:credo, "~> 0.8", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.16", only: [:dev, :test, :docs]}
+    ]
+  end
+
+  defp package do
+    [
+      files: ["lib", "mix.exs", "README.md", "LICENSE"],
+      maintainers: ["Andrey Chernykh"],
+      licenses: ["MIT"],
+      links: %{"Github" => "https://github.com/madeinussr/express"}
     ]
   end
 end

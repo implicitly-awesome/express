@@ -1,4 +1,6 @@
-# Express [![Build Status](https://img.shields.io/travis/madeinussr/express.svg?style=flat)](https://travis-ci.org/madeinussr/express)
+[![Hex.pm](https://img.shields.io/hexpm/v/express.svg)](https://hex.pm/packages/express) [![API Docs](https://img.shields.io/badge/api-docs-yellow.svg?style=flat)](http://hexdocs.pm/express/) [![Build Status](https://travis-ci.org/madeinussr/express.svg?branch=master)](https://travis-ci.org/madeinussr/express)
+
+# Express
 
 Library for sending push notifications.
 Supports Apple APNS and Google FCM services.
@@ -6,10 +8,10 @@ Supports Apple APNS and Google FCM services.
 Express - reviewed and remastered [Dufa](https://github.com/madeinussr/dufa) library with some core improvements:
 
 * utilizes poolboy (default pool size = 5, max_overflow = 1)
-* supervision tree was reviewed (worker per push, connection per supervisor (APNS))
-* DI in supervision tree allows to develop, test and maintain code with ease
+* supervision tree was reviewed (worker per push (APNS/FCM), connection per supervisor (APNS))
+* DI in supervision tree allows to develop, maintain, test and maintain code without pain
 
-Moreover, Express was battle tested on production.
+_battle tested in production_
 
 ## Installation
 
