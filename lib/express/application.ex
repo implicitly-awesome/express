@@ -46,7 +46,13 @@ defmodule Express.Application do
 
   @spec apns_poolboy_config() :: Keyword.t
   def apns_poolboy_config do
-    Application.get_env(:express, :apns)[:poolboy]
+    Application.get_env(:express, :apns)[:poolboy] ||
+    [
+      {:name, {:local, :apns_supervisors_pool}},
+      {:worker_module, Express.APNS.Supervisor},
+      {:size, 5},
+      {:max_overflow, 1}
+    ]
   end
 
   @spec apns_pool_name() :: atom()
@@ -56,7 +62,15 @@ defmodule Express.Application do
   end
 
   @spec fcm_poolboy_config() :: Keyword.t
-  def fcm_poolboy_config, do: Application.get_env(:express, :fcm)[:poolboy]
+  def fcm_poolboy_config do
+    Application.get_env(:express, :fcm)[:poolboy] ||
+    [
+      {:name, {:local, :fcm_supervisors_pool}},
+      {:worker_module, Express.FCM.Supervisor},
+      {:size, 5},
+      {:max_overflow, 1}
+    ]
+  end
 
   @spec fcm_pool_name() :: atom()
   def fcm_pool_name do

@@ -9,7 +9,18 @@ defmodule APNS.WorkerTest do
   defmodule FakePushOperation do
     @moduledoc false
 
-    def run(args), do: args[:callback_fun].(:a, :b)
+    def run(_args) do
+      # emulates response receiving
+      send(self(), {:END_STREAM, 1})
+    end
+  end
+
+  defmodule FakeHTTP2Client do
+    @moduledoc false
+
+    def get_response(_socket, _stream) do
+      {:ok, {[{":status", "200"}, {"apns-id", "bla-bla-bla-id"}], []}}
+    end
   end
 
   setup do
@@ -19,7 +30,7 @@ defmodule APNS.WorkerTest do
     push_message = %PushMessage{token: token, aps: aps, acme: %{}}
     ssl_config = SSLConfig.new()
     connection =
-      %HTTP2.Connection{client: nil,
+      %HTTP2.Connection{client: FakeHTTP2Client,
                         provider: :apns,
                         socket: nil,
                         ssl_config: ssl_config}
@@ -37,7 +48,7 @@ defmodule APNS.WorkerTest do
   end
 
   describe "push/2" do
-    test "with delay == 0 sends :push immediately", %{
+    test "with delay == 0 sends :push immediately and stops", %{
       connection: connection,
       worker_state: worker_state
     } do
@@ -47,6 +58,7 @@ defmodule APNS.WorkerTest do
         callback_fun: fn(_, _) ->
           # let 'immediately' be less than 1 sec :)
           assert :timer.now_diff(:erlang.timestamp, start_time) < 1_000_000
+          assert :timer.now_diff(:erlang.timestamp, start_time) > 0
         end
       })
 
@@ -61,7 +73,7 @@ defmodule APNS.WorkerTest do
   end
 
   describe "push/2" do
-    test "with delay > 0 sends :push after that delay", %{
+    test "with delay > 0 sends :push after that delay and stops", %{
       connection: connection,
       worker_state: worker_state
     } do
@@ -70,6 +82,7 @@ defmodule APNS.WorkerTest do
       worker_state = Map.merge(worker_state, %{
         callback_fun: fn(_, _) ->
           assert :timer.now_diff(:erlang.timestamp, start_time) > 1_000_000
+          assert :timer.now_diff(:erlang.timestamp, start_time) < 1_100_000
         end
       })
 

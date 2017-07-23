@@ -75,14 +75,13 @@ defmodule Express.APNS.Worker do
       callback_fun: callback_fun
     )
 
-    {:stop, :normal, state}
+    {:noreply, state}
   end
 
   def handle_info({:END_STREAM, stream},
                   %{connection: connection,
                     callback_fun: callback_fun} = state) do
     {:ok, {headers, body}} = HTTP2.get_response(connection, stream)
-
     handle_response({headers, body}, state, callback_fun)
 
     {:stop, :normal, state}
