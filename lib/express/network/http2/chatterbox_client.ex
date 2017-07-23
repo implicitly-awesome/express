@@ -1,7 +1,7 @@
 defmodule Express.Network.HTTP2.ChatterboxClient do
   @behaviour Express.Network.HTTP2.Client
   @moduledoc """
-  HTTP2-client which works via chatterbox library.
+  HTTP2-client which conforms Express.Network.HTTP2.Client behaviour with chatterbox library.
   """
 
   def uri(:apns, :prod), do: to_char_list("api.push.apple.com")

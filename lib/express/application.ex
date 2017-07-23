@@ -1,5 +1,5 @@
 defmodule Express.Application do
-  @moduledoc false
+  @moduledoc "Sets up Express's supervision tree."
 
   use Application
 
@@ -44,6 +44,11 @@ defmodule Express.Application do
     Supervisor.start_link(children, opts)
   end
 
+  @doc """
+  Returns poolboy config of APNS supervisors pool.
+  If poolboy config was overriden in config.exs - returns it,
+  default config will be returned otherwise.
+  """
   @spec apns_poolboy_config() :: Keyword.t
   def apns_poolboy_config do
     Application.get_env(:express, :apns)[:poolboy] ||
@@ -55,12 +60,18 @@ defmodule Express.Application do
     ]
   end
 
+  @doc "Returns the name of the APNS supervisors pool."
   @spec apns_pool_name() :: atom()
   def apns_pool_name do
     [{:name, {_, name}} | _] = apns_poolboy_config()
     name
   end
 
+  @doc """
+  Returns poolboy config of FCM supervisors pool.
+  If poolboy config was overriden in config.exs - returns it,
+  default config will be returned otherwise.
+  """
   @spec fcm_poolboy_config() :: Keyword.t
   def fcm_poolboy_config do
     Application.get_env(:express, :fcm)[:poolboy] ||
@@ -72,6 +83,7 @@ defmodule Express.Application do
     ]
   end
 
+  @doc "Returns the name of the FCM supervisors pool."
   @spec fcm_pool_name() :: atom()
   def fcm_pool_name do
     [{:name, {_, name}} | _] = fcm_poolboy_config()

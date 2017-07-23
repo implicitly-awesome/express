@@ -1,6 +1,12 @@
 defmodule Express.Operations.LogMessage do
   @moduledoc """
   Sends a message to the Logger.
+  
+  [Exop](https://github.com/madeinussr/exop) library operation.
+
+  Takes parameters:
+  * `message` (String)
+  * `type` of the message (error/warn/info)
   """
 
   use Exop.Operation

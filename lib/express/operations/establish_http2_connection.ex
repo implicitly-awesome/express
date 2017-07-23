@@ -1,6 +1,12 @@
 defmodule Express.Operations.EstablishHTTP2Connection do
   @moduledoc """
   Establishes HTTP2 connection and returns it.
+  
+  [Exop](https://github.com/madeinussr/exop) library operation.
+
+  Takes parameters:
+  * `http2_client` (a module that conforms `Express.Network.HTTP2.Client` behaviour)
+  * `ssl_config` (a structure that conforms `Express.Network.HTTP2.SSLConfig` behaviour)
   """
 
   use Exop.Operation

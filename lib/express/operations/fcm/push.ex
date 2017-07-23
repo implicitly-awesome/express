@@ -1,7 +1,14 @@
 defmodule Express.Operations.FCM.Push do
   @moduledoc """
-  Sends push_message synchronously to FCM with specified api_key.
+  Sends push_message synchronously to FCM.
   Invokes callback_fun function after response receive. 
+
+  [Exop](https://github.com/madeinussr/exop) library operation.
+
+  Takes parameters:
+  * `push_message` (a push message to send)
+  * `opts` (options)
+  * `callback_fun` (callback function to invoke on response)
   """
 
   use Exop.Operation

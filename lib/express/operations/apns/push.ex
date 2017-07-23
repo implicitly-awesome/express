@@ -1,7 +1,15 @@
 defmodule Express.Operations.APNS.Push do
   @moduledoc """
-  Sends push_message asynchronously to APNS with specified api_key.
+  Sends push_message synchronously to APNS.
   Invokes callback_fun function after response receive. 
+
+  [Exop](https://github.com/madeinussr/exop) library operation.
+
+  Takes parameters:
+  * `connection` (a connection to send push message through)
+  * `push_message` (a push message to send)
+  * `opts` (options)
+  * `callback_fun` (callback function to invoke on response)
   """
 
   use Exop.Operation

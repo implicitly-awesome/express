@@ -4,14 +4,11 @@ defmodule Express.Network.HTTP2.Client do
   """
   @type t :: __MODULE__
 
-  @doc """
-  Returns URI of a connection
-  """
+  @doc "Returns URI of a connection"
   @callback uri(atom(), atom()) :: list()
 
   @doc """
-  Открывает сокет для указанного провайдера, конфигурации и количества попыток.
-  Establishes 
+  Opens a socket for a `provider` with defined `configuration` and tries `count`.
   """
   @callback open_socket(atom(), map(), pos_integer()) ::
     {:ok, pid()} |
@@ -20,12 +17,12 @@ defmodule Express.Network.HTTP2.Client do
     {:error, :ssl_config, :rsa_key_missed}
 
   @doc """
-  Посылает запрос по сокету с заголовками и payload.
+  Sends a request through a socket by `pid` with `headers` and a `payload`.
   """
   @callback send_request(pid(), list(), String.t) :: {:ok, pid()} | any()
 
   @doc """
-  Получает ответ от сокета для stream.
+  Receives a response from socket by `pid` for a `stream`.
   """
   @callback get_response(pid(), pid()) :: {:ok, {String.t, String.t}} | any()
 end
