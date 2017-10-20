@@ -33,10 +33,12 @@ defmodule Express.Mixfile do
       {:chatterbox, "~> 0.5"},
       {:poolboy, "~> 1.5"},
       {:httpoison, "~> 0.12"},
-      {:exop, "~> 0.4.4"},
+      {:exop, "~> 0.4.6"},
       {:mock, "~> 0.2.0", only: :test},
       {:credo, "~> 0.8", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.16", only: [:dev, :test, :docs]}
+      {:ex_doc, "~> 0.16", only: [:dev, :test, :docs]},
+      {:timex, "~> 3.1"},
+      {:joken, "~> 1.4"}
     ]
   end
 

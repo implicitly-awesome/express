@@ -19,6 +19,15 @@ defmodule Express.Network.HTTP2.ChatterboxClient do
       _ -> open_socket(provider, ssl_config, (tries + 1))
     end
   end
+  def open_socket(provider, mode, tries) when is_atom(mode) do
+    result = :h2_client.start_link(:https,
+                                   uri(provider, mode),
+                                   default_socket_config)
+    case result do
+      {:ok, socket} -> {:ok, socket}
+      _ -> open_socket(provider, mode, (tries + 1))
+    end
+  end
   def open_socket(_, _, _), do: {:error, :ssl_config, :invalid_ssl_config}
 
   def send_request(socket, headers, payload) do
@@ -29,16 +38,19 @@ defmodule Express.Network.HTTP2.ChatterboxClient do
     :h2_client.get_response(socket, stream)
   end
 
-  @spec socket_config(binary(), binary()) :: list()
-  defp socket_config(cert, key) do
+  @spec default_socket_config() :: list()
+  defp default_socket_config do
     [
-      cert,
-      key,
       {:password, ''},
       {:packet, 0},
       {:reuseaddr, true},
       {:active, true},
       :binary
     ]
+  end
+
+  @spec socket_config(binary(), binary()) :: list()
+  defp socket_config(cert, key) do
+    default_socket_config ++ [cert, key]
   end
 end

@@ -5,22 +5,29 @@ defmodule Express.APNS do
 
   @behaviour Express
 
-  alias Express.APNS
-  alias Express.APNS.Worker
+  alias Express.APNS.{Worker, PushMessage, DelayedPushes}
 
-  @spec push(APNS.PushMessage.t, Keyword.t, Express.callback_fun | nil) ::
-    {:noreply, map()}
+  @spec push(PushMessage.t, Keyword.t, Express.callback_fun | nil) :: {:noreply, map()}
   def push(push_message, opts \\ [], callback_fun \\ nil) do
-    do_push(push_message, opts, callback_fun)
+    if opts[:delay] do
+      delayed_push(push_message, opts, callback_fun)
+    else
+      instant_push(push_message, opts, callback_fun)
+    end
   end
 
-  @spec do_push(APNS.PushMessage.t, Keyword.t, fun()) :: {:noreply, map()}
-  defp do_push(push_message, opts, callback_fun) do
-    :poolboy.transaction(pool_name(), fn(supervisor) ->
-      APNS.Supervisor.push(supervisor, Worker, push_message, opts, callback_fun)
+  @spec instant_push(PushMessage.t, Keyword.t, Express.callback_fun) :: {:noreply, map()}
+  defp instant_push(push_message, opts, callback_fun) do
+    :poolboy.transaction(pool_name(), fn(worker) ->
+      Worker.push(worker, push_message, opts, callback_fun)
     end)
   end
 
+  @spec delayed_push(PushMessage.t, Keyword.t, Express.callback_fun) :: {:noreply, map()}
+  defp delayed_push(push_message, opts, callback_fun) do
+    DelayedPushes.add(push_message, opts, callback_fun)
+  end
+
   @spec pool_name() :: atom()
-  defp pool_name, do: Express.Application.apns_pool_name()
+  defp pool_name, do: Express.Supervisor.apns_pool_name()
 end

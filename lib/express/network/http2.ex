@@ -7,21 +7,39 @@ defmodule Express.Network.HTTP2 do
   alias Express.APNS
 
   @doc """
-  Establishes a connection for `provider` with provided `ssl_config` and `client` which maintains the connection.
+  Establishes a connection for `provider` with either `ssl_config` or `jwt` and `client` which maintains the connection.
   Returns the connection.
   """
-  @spec connect(Client.t, atom(), APNS.SSLConfig.t) :: {:ok, Connection.t} |
-                                                       {:error, any()}
-  def connect(client, provider, ssl_config) do
+  @spec connect(Client.t, atom(), APNS.SSLConfig.t | String.t) :: {:ok, Connection.t} |
+                                                                  {:error, any()}
+  def connect(client, provider, ssl_config) when is_map(ssl_config) do
     case client.open_socket(provider, ssl_config, 0) do
       {:ok, socket} ->
-        connection = %Connection{
+        params = %{
           client: client,
           provider: provider,
           socket: socket,
           ssl_config: ssl_config
         }
-        {:ok, connection}
+
+        {:ok, Connection.new(params)}
+      error ->
+        error
+    end
+  end
+  def connect(client, provider, jwt) when is_binary(jwt) do
+    mode = Application.get_env(:express, :apns)[:mode]
+
+    case client.open_socket(provider, mode, 0) do
+      {:ok, socket} ->
+        params = %{
+          client: client,
+          provider: provider,
+          socket: socket,
+          jwt: jwt
+        }
+
+        {:ok, Connection.new(params)}
       error ->
         error
     end

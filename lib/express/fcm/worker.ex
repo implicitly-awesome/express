@@ -13,61 +13,51 @@ defmodule Express.FCM.Worker do
     """
 
     @type t :: %__MODULE__{
-      push_operation: module(),
-      push_message: PushMessage.t,
-      opts: Keyword.t,
-      callback_fun: ((PushMessage.t, any()) -> any()) | nil
+      callback_fun: Express.callback_fun
     }
 
-    defstruct ~w(push_operation push_message opts callback_fun)a
-
-    @spec new(Keyword.t) :: __MODULE__.t
-    def new(args) do
-      %__MODULE__{
-        push_operation: Keyword.get(args, :push_operation),
-        push_message: Keyword.get(args, :push_message),
-        opts: Keyword.get(args, :opts),
-        callback_fun: Keyword.get(args, :callback_fun)
-      }
-    end
+    defstruct ~w(callback_fun)a
   end
 
-  @spec start_link(State.t) :: {:ok, pid} |
-                               :ignore |
-                               {:error, {:already_started, pid} | any()}
-  def start_link(state), do: GenServer.start_link(__MODULE__, {:ok, state})
+  def start_link, do: start_link(:ok)
+  def start_link(_), do: GenServer.start_link(__MODULE__, :ok)
 
-  def init({:ok, state}), do: {:ok, state}
+  def init(:ok), do: {:ok, %State{}}
 
   @doc """
-  Pushes a push message via `worker` with specified `delay`.
+  Pushes a `push_message` via `worker` with specified `opts` and `callback_fun`.
   """
-  @spec push(pid(), pos_integer()) :: reference() |
-                                      :ok |
-                                      :noconnect |
-                                      :nosuspend |
-                                      true
-  def push(worker, delay \\ 0)
-  def push(worker, delay) when is_integer(delay) and delay >= 1 do
-    Process.send_after(worker, :push, delay * 1000)
-  end
-  def push(worker, delay) when is_integer(delay) do
-    Process.send(worker, :push, [])
-  end
-  def push(worker, _delay) do
-    Process.exit(worker, :normal)
+  @spec push(module(), PushMessage.t, Keyword.t, Express.callback_fun) :: reference() |
+                                                                          :ok |
+                                                                          :noconnect |
+                                                                          :nosuspend |
+                                                                          true
+  def push(worker, push_message, opts, callback_fun) do
+    Process.send(worker, {:push, push_message, opts, callback_fun}, [])
   end
 
-  def handle_info(:push, %{push_operation: push_operation,
-                           push_message: push_message,
-                           opts: opts,
-                           callback_fun: callback_fun} = state) do
-    push_operation.run(
+  @doc """
+  Pushes a `push_message` via `worker` with specified `opts` and `callback_fun`
+  after a delay specified in the `opts`.
+  """
+  @spec push_after(module(), PushMessage.t, Keyword.t, Express.callback_fun) :: reference() |
+                                                                                :ok |
+                                                                                :noconnect |
+                                                                                :nosuspend |
+                                                                                true
+  def push_after(worker, push_message, opts, callback_fun) do
+    delay = (opts[:delay] || 1) * 1000
+    Process.send_after(worker, {:push, push_message, opts, callback_fun}, delay)
+  end
+
+  def handle_info({:push, push_message, opts, callback_fun}, state) do
+    Push.run!(
       push_message: push_message,
+      connection: state.connection,
       opts: opts,
       callback_fun: callback_fun
     )
 
-    {:stop, :normal, state}
+    {:noreply, Map.put(state, :callback_fun, callback_fun)}
   end
 end
