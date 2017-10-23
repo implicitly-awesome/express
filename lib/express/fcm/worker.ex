@@ -14,10 +14,12 @@ defmodule Express.FCM.Worker do
     """
 
     @type t :: %__MODULE__{
-      callback_fun: Express.callback_fun
+      push_message: PushMessage.t,
+      callback_fun: Express.callback_fun,
+      delayed: boolean()
     }
 
-    defstruct ~w(callback_fun)a
+    defstruct ~w(push_message callback_fun delayed)a
   end
 
   def start_link, do: start_link(:ok)
@@ -58,6 +60,16 @@ defmodule Express.FCM.Worker do
       callback_fun: callback_fun
     )
 
-    {:stop, :normal, Map.put(state, :callback_fun, callback_fun)}
+    new_state =
+      state
+      |> Map.put(:push_message, push_message)
+      |> Map.put(:callback_fun, callback_fun)
+      |> Map.put(:delayed, (opts[:delay] && opts[:delay] > 0))
+
+    if new_state.delayed do
+      {:stop, :normal, new_state}
+    else
+      {:noreply, new_state}
+    end
   end
 end

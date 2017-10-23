@@ -18,10 +18,11 @@ defmodule Express.APNS.Worker do
     @type t :: %__MODULE__{
       connection: HTTP2.Connection.t,
       push_message: PushMessage.t,
-      callback_fun: Express.callback_fun
+      callback_fun: Express.callback_fun,
+      delayed: boolean()
     }
 
-    defstruct ~w(connection push_message callback_fun)a
+    defstruct ~w(connection push_message callback_fun delayed)a
   end
 
   def start_link, do: start_link(:ok)
@@ -75,17 +76,23 @@ defmodule Express.APNS.Worker do
       state
       |> Map.put(:push_message, push_message)
       |> Map.put(:callback_fun, callback_fun)
+      |> Map.put(:delayed, (opts[:delay] && opts[:delay] > 0))
 
     {:noreply, new_state}
   end
 
   def handle_info({:END_STREAM, stream},
                   %{connection: connection,
-                    callback_fun: callback_fun} = state) do
+                    callback_fun: callback_fun,
+                    delayed: delayed} = state) do
     {:ok, {headers, body}} = HTTP2.get_response(connection, stream)
     handle_response({headers, body}, state, callback_fun)
 
-    {:stop, :normal, state}
+    if delayed do
+      {:stop, :normal, state}
+    else
+      {:noreply, state}
+    end
   end
 
   @spec handle_response({list(), String.t},
