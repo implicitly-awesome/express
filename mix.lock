@@ -8,6 +8,7 @@
   "earmark": {:hex, :earmark, "1.2.2", "f718159d6b65068e8daeef709ccddae5f7fdc770707d82e7d126f584cd925b74", [:mix], [], "hexpm"},
   "ex_doc": {:hex, :ex_doc, "0.16.2", "3b3e210ebcd85a7c76b4e73f85c5640c011d2a0b2f06dcdf5acdb2ae904e5084", [:mix], [{:earmark, "~> 1.1", [hex: :earmark, repo: "hexpm", optional: false]}], "hexpm"},
   "exop": {:hex, :exop, "0.4.6", "3ad2c07cb9816e864c76d9d659c779807c2b852b2b9ccf99a78fd0891a5c72af", [:mix], [], "hexpm"},
+  "gen_stage": {:hex, :gen_stage, "0.12.2", "e0e347cbb1ceb5f4e68a526aec4d64b54ad721f0a8b30aa9d28e0ad749419cbb", [], [], "hexpm"},
   "gettext": {:hex, :gettext, "0.13.1", "5e0daf4e7636d771c4c71ad5f3f53ba09a9ae5c250e1ab9c42ba9edccc476263", [], [], "hexpm"},
   "goldrush": {:hex, :goldrush, "0.1.9", "f06e5d5f1277da5c413e84d5a2924174182fb108dabb39d5ec548b27424cd106", [:rebar3], [], "hexpm"},
   "gun": {:hex, :gun, "1.0.0-pre.2", "9c7261a32aed26d6eec69ef7da15ed2f929c10460d5dede805bc5c2436a69ce0", [], [{:cowlib, "1.3.0", [hex: :cowlib, repo: "hexpm", optional: false]}, {:ranch, "1.3.2", [hex: :ranch, repo: "hexpm", optional: false]}], "hexpm"},

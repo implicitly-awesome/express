@@ -38,7 +38,8 @@ defmodule Express.Mixfile do
       {:credo, "~> 0.8", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.16", only: [:dev, :test, :docs]},
       {:timex, "~> 3.1"},
-      {:joken, "~> 1.4"}
+      {:joken, "~> 1.4"},
+      {:gen_stage, "~> 0.12"}
     ]
   end
 

@@ -5,7 +5,7 @@ defmodule Express.APNS do
 
   @behaviour Express
 
-  alias Express.APNS.{Worker, PushMessage, DelayedPushes}
+  alias Express.APNS.{Worker, PushMessage, DelayedPushes, Supervisor}
 
   @spec push(PushMessage.t, Keyword.t, Express.callback_fun | nil) :: {:noreply, map()}
   def push(push_message, opts \\ [], callback_fun \\ nil) do
@@ -29,5 +29,5 @@ defmodule Express.APNS do
   end
 
   @spec pool_name() :: atom()
-  defp pool_name, do: Express.Supervisor.apns_pool_name()
+  defp pool_name, do: Supervisor.apns_pool_name()
 end

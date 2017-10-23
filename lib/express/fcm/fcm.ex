@@ -5,7 +5,7 @@ defmodule Express.FCM do
 
   @behaviour Express
 
-  alias Express.FCM.{Worker, PushMessage, DelayedPushes}
+  alias Express.FCM.{Worker, PushMessage, DelayedPushes, Supervisor}
 
   @spec push(FCM.PushMessage.t, Keyword.t, Express.callback_fun | nil) :: {:noreply, map()}
   def push(push_message, opts \\ [], callback_fun \\ nil) do
@@ -29,5 +29,5 @@ defmodule Express.FCM do
   end
 
   @spec pool_name() :: atom()
-  defp pool_name, do: Express.Supervisor.fcm_pool_name()
+  defp pool_name, do: Supervisor.fcm_pool_name()
 end
