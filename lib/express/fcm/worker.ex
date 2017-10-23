@@ -6,6 +6,7 @@ defmodule Express.FCM.Worker do
   use GenServer
 
   alias Express.FCM.PushMessage
+  alias Express.Operations.FCM.Push
 
   defmodule State do
     @moduledoc """
@@ -53,11 +54,10 @@ defmodule Express.FCM.Worker do
   def handle_info({:push, push_message, opts, callback_fun}, state) do
     Push.run!(
       push_message: push_message,
-      connection: state.connection,
       opts: opts,
       callback_fun: callback_fun
     )
 
-    {:noreply, Map.put(state, :callback_fun, callback_fun)}
+    {:stop, :normal, Map.put(state, :callback_fun, callback_fun)}
   end
 end
