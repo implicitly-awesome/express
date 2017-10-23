@@ -8,7 +8,7 @@ defmodule Express.APNS.JWT do
   alias JOSE.JWK
 
   @algorithm "ES256"
-  @ttl 5
+  @ttl 3000
 
   def new do
     now = Timex.to_unix(Timex.now())
