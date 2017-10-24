@@ -15,4 +15,7 @@ config :express,
        fcm: [
          api_key: System.get_env("EXPRESS_FCM_API_KEY"),
          collapse_key: System.get_env("EXPRESS_FCM_COLLAPSE_KEY")
+       ],
+       buffer: [
+         consumers_count: 10
        ]

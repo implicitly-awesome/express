@@ -1,35 +1,27 @@
 defmodule Express.APNS.Worker do
-  @moduledoc """
-  Incapsulates work with APNS logic. Exists temporary: until work with APNS finished.
-  """
-
   use GenServer
-  alias Express.Operations.LogMessage
 
+  alias Express.Operations.LogMessage
+  alias Express.APNS.JWTHolder
   alias Express.Network.HTTP2
-  alias Express.APNS.{PushMessage, ConnectionHolder}
+  alias Express.APNS.PushMessage
   alias Express.Operations.APNS.Push
+  alias Express.APNS.Connection, as: APNSConnection
 
   defmodule State do
-    @moduledoc """
-    Defines APNS worker state structure.
-    """
-
     @type t :: %__MODULE__{
       connection: HTTP2.Connection.t,
       push_message: PushMessage.t,
-      callback_fun: Express.callback_fun,
-      delayed: boolean()
+      callback_fun: Express.callback_fun
     }
 
-    defstruct ~w(connection push_message callback_fun delayed)a
+    defstruct ~w(connection push_message callback_fun)a
   end
 
-  def start_link, do: start_link(:ok)
   def start_link(_), do: GenServer.start_link(__MODULE__, :ok)
 
   def init(:ok) do
-    connection = ConnectionHolder.connection()
+    connection = APNSConnection.new()
 
     if connection do
       {:ok, %State{connection: connection}}
@@ -38,75 +30,49 @@ defmodule Express.APNS.Worker do
     end
   end
 
-  @doc """
-  Pushes a `push_message` via `worker` with specified `opts` and `callback_fun`.
-  """
-  @spec push(module(), PushMessage.t, Keyword.t, Express.callback_fun) :: reference() |
-                                                                          :ok |
-                                                                          :noconnect |
-                                                                          :nosuspend |
-                                                                          true
   def push(worker, push_message, opts, callback_fun) do
-    Process.send(worker, {:push, push_message, opts, callback_fun}, [])
+    GenServer.call(worker, {:push, push_message, opts, callback_fun})
   end
 
-  @doc """
-  Pushes a `push_message` via `worker` with specified `opts` and `callback_fun`
-  after a delay specified in the `opts`.
-  """
-  @spec push_after(module(), PushMessage.t, Keyword.t, Express.callback_fun) :: reference() |
-                                                                                :ok |
-                                                                                :noconnect |
-                                                                                :nosuspend |
-                                                                                true
-  def push_after(worker, push_message, opts, callback_fun) do
-    delay = (opts[:delay] || 1) * 1000
-    Process.send_after(worker, {:push, push_message, opts, callback_fun}, delay)
-  end
+  def handle_call({:push, push_message, _opts, callback_fun}, _from, state) do
+    params =
+      if is_map(state.connection.ssl_config) do
+        [
+          push_message: push_message,
+          connection: state.connection
+        ]
+      else
+        [
+          push_message: push_message,
+          connection: state.connection,
+          jwt: JWTHolder.get_jwt()
+        ]
+      end
 
-  def handle_info({:push, push_message, opts, callback_fun}, state) do
-    Push.run!(
-      push_message: push_message,
-      connection: state.connection,
-      opts: opts,
-      callback_fun: callback_fun
-    )
+    Push.run!(params)
 
     new_state =
       state
       |> Map.put(:push_message, push_message)
       |> Map.put(:callback_fun, callback_fun)
-      |> Map.put(:delayed, (opts[:delay] && opts[:delay] > 0))
 
-    {:noreply, new_state}
+    {:reply, :ok, new_state}
   end
 
   def handle_info({:END_STREAM, stream},
                   %{connection: connection,
-                    callback_fun: callback_fun,
-                    delayed: delayed} = state) do
+                    callback_fun: callback_fun} = state) do
     {:ok, {headers, body}} = HTTP2.get_response(connection, stream)
     handle_response({headers, body}, state, callback_fun)
 
-    if delayed do
-      {:stop, :normal, state}
-    else
-      {:noreply, state}
-    end
+    {:noreply, state}
   end
 
-  @spec handle_response({list(), String.t},
-                        map(),
-                        Express.callback_fun | nil) :: {:noreply, map()}
-  defp handle_response({headers, body} = response, state, callback_fun)
+  defp handle_response({headers, body} = _response, state, callback_fun)
        when (is_function(callback_fun) or is_nil(callback_fun)) do
     result =
       case status = fetch_status(headers) do
         200 ->
-          if Mix.env == :dev do
-            LogMessage.run!(message: inspect(response), type: :info)
-          end
-
           {:ok, %{status: status, body: body}}
         status ->
           error_reason = fetch_reason(body)

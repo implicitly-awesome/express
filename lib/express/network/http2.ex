@@ -27,7 +27,8 @@ defmodule Express.Network.HTTP2 do
         error
     end
   end
-  def connect(client, provider, jwt) when is_binary(jwt) do
+
+  def connect(client, provider) do
     mode = Application.get_env(:express, :apns)[:mode]
 
     case client.open_socket(provider, mode, 0) do
@@ -35,8 +36,7 @@ defmodule Express.Network.HTTP2 do
         params = %{
           client: client,
           provider: provider,
-          socket: socket,
-          jwt: jwt
+          socket: socket
         }
 
         {:ok, Connection.new(params)}

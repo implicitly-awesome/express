@@ -17,7 +17,6 @@ defmodule Express.Operations.EstablishHTTP2Connection do
 
   parameter :http2_client, required: true
   parameter :ssl_config, struct: %SSLConfig{}
-  parameter :jwt, type: :string
 
   def process(contract) when is_list(contract) do
     contract |> Enum.into(%{}) |> process()
@@ -53,8 +52,8 @@ defmodule Express.Operations.EstablishHTTP2Connection do
         {:error, :unhandled}
     end
   end
-  def process(%{http2_client: http2_client, jwt: jwt}) when is_binary(jwt) do
-    case HTTP2.connect(http2_client, :apns, jwt) do
+  def process(%{http2_client: http2_client}) do
+    case HTTP2.connect(http2_client, :apns) do
       {:ok, connection} ->
         connection
       {:error, :open_socket, :timeout} ->

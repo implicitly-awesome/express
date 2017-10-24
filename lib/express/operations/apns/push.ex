@@ -20,21 +20,18 @@ defmodule Express.Operations.APNS.Push do
   alias Express.APNS.PushMessage
 
   parameter :connection, struct: %HTTP2.Connection{}, required: true
+  parameter :jwt, type: :string
   parameter :push_message, struct: %PushMessage{}, required: true
-  parameter :opts, type: :list, default: []
-  parameter :callback_fun, type: :function
 
   def process(contract) do
     connection = contract[:connection]
+    jwt = contract[:jwt]
     push_message = contract[:push_message]
 
-    do_push(push_message, connection)
-    true
+    do_push(push_message, connection, jwt)
   end
 
-  @spec do_push(PushMessage.t, HTTP2.Connection.t) :: {:noreply, map()}
-  defp do_push(%{token: token} = push_message, %{ssl_config: ssl_config} = connection)
-       when is_map(ssl_config) do
+  defp do_push(%{token: token} = push_message, connection, nil) do
     {:ok, json} = Poison.encode(push_message)
 
     if Mix.env == :dev, do: LogMessage.run!(message: json, type: :info)
@@ -54,8 +51,7 @@ defmodule Express.Operations.APNS.Push do
 
     HTTP2.send_request(connection, headers, json)
   end
-  defp do_push(%{token: token} = push_message, %{jwt: jwt} = connection)
-       when is_binary(jwt) do
+  defp do_push(%{token: token} = push_message, connection, jwt) when is_binary(jwt) do
     {:ok, json} = Poison.encode(push_message)
 
     if Mix.env == :dev, do: LogMessage.run!(message: json, type: :info)
@@ -76,6 +72,5 @@ defmodule Express.Operations.APNS.Push do
 
     HTTP2.send_request(connection, headers, json)
   end
-
-  defp do_push(_push_message, _connection), do: {:error, :malformed_connection}
+  defp do_push(_push_message, _connection, _jwt), do: {:error, :malformed_connection}
 end
