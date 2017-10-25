@@ -29,7 +29,7 @@ defmodule Express.Operations.EstablishHTTP2Connection do
       {:error, :open_socket, :timeout} ->
         error_message = """
         [APNS supervisor] Could not establish a connection with APNS.
-        Is certificate valid and signed for :#{inspect(ssl_config[:mode])} mode? 
+        Is certificate valid and signed for :#{inspect(ssl_config.mode)} mode? 
         """
         LogMessage.run!(message: error_message)
 
