@@ -5,8 +5,7 @@ defmodule Express.PushRequests.Consumer do
   alias Express.FCM.PushMessage, as: FCMPushMessage
   alias Express.APNS.Worker, as: APNSWorker
   alias Express.FCM.Worker, as: FCMWorker
-  alias Express.APNS.Supervisor, as: APNSSupervisor
-  alias Express.FCM.Supervisor, as: FCMSupervisor
+  alias Express.Operations.PoolboyConfigs
 
   @max_demand System.schedulers_online() * 5
 
@@ -60,13 +59,13 @@ defmodule Express.PushRequests.Consumer do
 
   defp do_push(%{push_message: %APNSPushMessage{} = push_message,
                  opts: opts, callback_fun: callback_fun}, _state) do
-    :poolboy.transaction(APNSSupervisor.apns_workers_pool_name(), fn(worker) ->
+    :poolboy.transaction(PoolboyConfigs.apns_workers().name, fn(worker) ->
       APNSWorker.push(worker, push_message, opts, callback_fun)
     end)
   end
   defp do_push(%{push_message: %FCMPushMessage{} = push_message,
                  opts: opts, callback_fun: callback_fun}, _state) do
-    :poolboy.transaction(FCMSupervisor.fcm_workers_pool_name(), fn(worker) ->
+    :poolboy.transaction(PoolboyConfigs.fcm_workers().name, fn(worker) ->
       FCMWorker.push(worker, push_message, opts, callback_fun)
     end)
   end
