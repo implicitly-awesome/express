@@ -8,6 +8,7 @@ defmodule Express.FCM do
   alias Express.PushRequests.Supervisor
   alias Express.PushRequests.Adder
   alias Express.FCM.{PushMessage, DelayedPushes}
+  alias Express.Operations.PoolboyConfigs
 
   @spec push(FCM.PushMessage.t, Keyword.t, Express.callback_fun | nil) :: {:noreply, map()}
   def push(push_message, opts \\ [], callback_fun \\ nil) do
@@ -20,7 +21,7 @@ defmodule Express.FCM do
 
   @spec instant_push(PushMessage.t, Keyword.t, Express.callback_fun) :: {:noreply, map()}
   defp instant_push(push_message, opts, callback_fun) do
-    :poolboy.transaction(buffer_adders_pool_name(), fn(adder) ->
+    :poolboy.transaction(PoolboyConfigs.buffer_adders().name, fn(adder) ->
       Adder.add(adder, push_message, opts, callback_fun)
     end)
   end
@@ -29,7 +30,4 @@ defmodule Express.FCM do
   defp delayed_push(push_message, opts, callback_fun) do
     DelayedPushes.add(push_message, opts, callback_fun)
   end
-
-  @spec buffer_adders_pool_name() :: atom()
-  defp buffer_adders_pool_name, do: Supervisor.buffer_adders_pool_name()
 end

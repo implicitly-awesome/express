@@ -13,4 +13,12 @@ config :express,
        fcm: [
          api_key: "your_api_key",
          collapse_key: "your_collapse_key"
+       ],
+       buffer: [
+        adders_pool_config: [
+          {:name, {:local, :buffer_adders_pool}},
+          {:worker_module, Express.PushRequests.Adder},
+          {:size, 10},
+          {:max_overflow, 2}
+        ]
        ]

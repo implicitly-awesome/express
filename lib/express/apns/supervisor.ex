@@ -2,6 +2,7 @@ defmodule Express.APNS.Supervisor do
   use Supervisor
 
   alias Express.APNS.Connection
+  alias Express.Operations.PoolboyConfigs
 
   def start_link do
     Supervisor.start_link(__MODULE__, :ok, name: __MODULE__)
@@ -18,8 +19,8 @@ defmodule Express.APNS.Supervisor do
           restart: :permanent
         ),
         :poolboy.child_spec(
-          apns_workers_pool_name(),
-          apns_workers_poolboy_config(),
+          PoolboyConfigs.apns_workers().name,
+          PoolboyConfigs.apns_workers().config,
           []
         )
       ]
@@ -36,21 +37,5 @@ defmodule Express.APNS.Supervisor do
       strategy: :one_for_one,
       name: __MODULE__
     ]
-  end
-
-  @spec apns_workers_poolboy_config() :: Keyword.t
-  def apns_workers_poolboy_config do
-    Application.get_env(:express, :apns)[:workers_poolboy_config] ||
-    [
-      {:name, {:local, :apns_workers_pool}},
-      {:worker_module, Express.APNS.Worker},
-      {:size, System.schedulers_online()}
-    ]
-  end
-
-  @spec apns_workers_pool_name() :: atom()
-  def apns_workers_pool_name do
-    [{:name, {_, name}} | _] = apns_workers_poolboy_config()
-    name
   end
 end
