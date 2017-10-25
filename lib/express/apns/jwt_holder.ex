@@ -6,7 +6,7 @@ defmodule Express.APNS.JWTHolder do
   alias JOSE.JWK
 
   @algorithm "ES256"
-  @ttl 3000
+  @ttl 50 * 60
 
   defmodule State do
     @type t :: %__MODULE__{jwt: String.t, iat: integer()}
