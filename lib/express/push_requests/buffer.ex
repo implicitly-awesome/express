@@ -3,7 +3,7 @@ defmodule Express.PushRequests.Buffer do
 
   alias Express.PushRequests.{PushRequest, ConsumersSupervisor}
 
-  @max_buffer_size 5000
+  @max_buffer_size (Application.get_env(:express, :buffer)[:max_size] || 5000)
 
   def start_link do
     GenStage.start_link(__MODULE__, :ok, name: __MODULE__)

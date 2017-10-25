@@ -20,5 +20,7 @@ config :express,
           {:worker_module, Express.PushRequests.Adder},
           {:size, 10},
           {:max_overflow, 2}
-        ]
+        ],
+        consumers_count: 10,
+        max_size: 10_000
        ]

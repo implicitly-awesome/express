@@ -25,10 +25,6 @@ defmodule Express.PushRequests.Adder do
       callback_fun: callback_fun
     })
 
-    if is_integer(opts[:delay]) && opts[:delay] > 0 do
-      {:stop, :normal, state}
-    else
-      {:noreply, state}
-    end
+    {:noreply, state}
   end
 end
