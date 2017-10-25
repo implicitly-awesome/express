@@ -52,14 +52,14 @@ defmodule Express.APNS.JWTHolder do
     |> get_compact()
   end
 
-  defp auth_key do
+  def auth_key do
     :express
     |> Application.get_env(:apns)
     |> Keyword.get(:auth_key_path)
     |> JWK.from_pem_file
   end
 
-  defp expired?(iat) do
+  def expired?(iat) do
     Timex.diff(Timex.now(), iat, :seconds) > @ttl
   end
 end
