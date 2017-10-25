@@ -4,7 +4,7 @@ defmodule FCM.DelayedPushesTest do
   alias Express.FCM.DelayedPushes
   alias Express.FCM.PushMessage
 
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   setup do
     {:ok, sup_pid} = DelayedPushes.start_link()

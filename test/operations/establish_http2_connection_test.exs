@@ -1,13 +1,13 @@
 defmodule Operations.EstablishHTTP2ConnectionTest do
   @moduledoc false
 
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   import Mock
 
   alias Express.Network.HTTP2
   alias Express.Network.HTTP2.Connection
-  alias Express.Operations.{EstablishHTTP2Connection, LogMessage}
+  alias Express.Operations.EstablishHTTP2Connection
   alias Express.Network.HTTP2.{ChatterboxClient, SSLConfig}
 
   describe "when ssl config was provided" do

@@ -1,7 +1,7 @@
 defmodule PushRequests.BufferTest do
   @moduledoc false
 
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Express.PushRequests.Buffer
   alias Express.PushRequests.ConsumersSupervisor

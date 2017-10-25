@@ -4,7 +4,7 @@ defmodule APNS.DelayedPushesTest do
   alias Express.APNS.DelayedPushes
   alias Express.APNS.PushMessage
 
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   setup do
     {:ok, sup_pid} = DelayedPushes.start_link()
