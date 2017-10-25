@@ -8,7 +8,7 @@ defmodule Express.PushRequests.Consumer do
   alias Express.APNS.Supervisor, as: APNSSupervisor
   alias Express.FCM.Supervisor, as: FCMSupervisor
 
-  @max_demand System.schedulers_online() * 10
+  @max_demand System.schedulers_online() * 5
 
   defmodule State do
     @type t :: %__MODULE__{producer: pid() | atom(),
