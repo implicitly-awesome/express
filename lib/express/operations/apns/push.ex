@@ -8,8 +8,7 @@ defmodule Express.Operations.APNS.Push do
   Takes parameters:
   * `connection` (a connection to send push message through)
   * `push_message` (a push message to send)
-  * `opts` (options)
-  * `callback_fun` (callback function to invoke on response)
+  * `jwt` (a JWT for a request (if you don't use ssl config))
   """
 
   use Exop.Operation
@@ -31,46 +30,31 @@ defmodule Express.Operations.APNS.Push do
     do_push(push_message, connection, jwt)
   end
 
-  defp do_push(%{token: token} = push_message, connection, nil) do
-    {:ok, json} = Poison.encode(push_message)
+  defp do_push(push_message, connection, jwt) do
+    {:ok, payload} = Poison.encode(push_message)
 
-    if Mix.env == :dev, do: LogMessage.run!(message: json, type: :info)
+    if Mix.env == :dev, do: LogMessage.run!(message: payload, type: :info)
 
-    headers = [
-      {":method", "POST"},
-      {":path", "/3/device/#{token}"},
-      {"content-length", "#{byte_size(json)}"}
-    ]
+    headers = headers_for(push_message, payload, jwt)
 
-    headers =
-      if push_message.topic do
-        headers ++ [{"apns-topic", push_message.topic}]
-      else
-        headers
-      end
-
-    HTTP2.send_request(connection, headers, json)
-  end
-  defp do_push(%{token: token} = push_message, connection, jwt) when is_binary(jwt) do
-    {:ok, json} = Poison.encode(push_message)
-
-    if Mix.env == :dev, do: LogMessage.run!(message: json, type: :info)
-
-    headers = [
-      {":method", "POST"},
-      {":path", "/3/device/#{token}"},
-      {"content-length", "#{byte_size(json)}"},
-      {"authorization", "bearer #{jwt}"}
-    ]
-
-    headers =
-      if push_message.topic do
-        headers ++ [{"apns-topic", push_message.topic}]
-      else
-        headers
-      end
-
-    HTTP2.send_request(connection, headers, json)
+    HTTP2.send_request(connection, headers, payload)
   end
   defp do_push(_push_message, _connection, _jwt), do: {:error, :malformed_connection}
+
+  defp headers_for(push_message, payload, nil) do
+    headers = [
+      {":method", "POST"},
+      {":path", "/3/device/#{push_message.token}"},
+      {"content-length", "#{byte_size(payload)}"}
+    ]
+
+    if push_message.topic do
+      headers ++ [{"apns-topic", push_message.topic}]
+    else
+      headers
+    end
+  end
+  defp headers_for(push_message, payload, jwt) do
+    headers_for(push_message, payload, nil) ++ [{"authorization", "bearer #{jwt}"}]
+  end
 end
