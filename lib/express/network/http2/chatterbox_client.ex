@@ -22,7 +22,7 @@ defmodule Express.Network.HTTP2.ChatterboxClient do
   def open_socket(provider, mode, tries) when is_atom(mode) do
     result = :h2_client.start_link(:https,
                                    uri(provider, mode),
-                                   default_socket_config)
+                                   default_socket_config())
     case result do
       {:ok, socket} -> {:ok, socket}
       _ -> open_socket(provider, mode, (tries + 1))
@@ -51,6 +51,6 @@ defmodule Express.Network.HTTP2.ChatterboxClient do
 
   @spec socket_config(binary(), binary()) :: list()
   defp socket_config(cert, key) do
-    default_socket_config ++ [cert, key]
+    default_socket_config() ++ [cert, key]
   end
 end

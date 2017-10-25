@@ -39,7 +39,6 @@ defmodule Express.Operations.APNS.Push do
 
     HTTP2.send_request(connection, headers, payload)
   end
-  defp do_push(_push_message, _connection, _jwt), do: {:error, :malformed_connection}
 
   defp headers_for(push_message, payload, nil) do
     headers = [

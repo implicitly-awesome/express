@@ -5,7 +5,6 @@ defmodule Express.FCM do
 
   @behaviour Express
 
-  alias Express.PushRequests.Supervisor
   alias Express.PushRequests.Adder
   alias Express.FCM.{PushMessage, DelayedPushes}
   alias Express.Operations.PoolboyConfigs

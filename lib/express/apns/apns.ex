@@ -1,7 +1,6 @@
 defmodule Express.APNS do
   @behaviour Express
 
-  alias Express.PushRequests.Supervisor
   alias Express.PushRequests.Adder
   alias Express.APNS.{PushMessage, DelayedPushes}
   alias Express.Operations.PoolboyConfigs
