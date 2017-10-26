@@ -16,7 +16,7 @@ Default consumer max demand is number_of_available_schedulers * 5 (multiplier ca
 # in your mix.exs file
 
 def deps do
-  {:express, "~> 1.5"}
+  {:express, "~> 1.1"}
 end
 
 # in your config.exs file (more in configuration section below)
