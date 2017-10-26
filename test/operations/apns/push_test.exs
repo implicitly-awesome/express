@@ -28,7 +28,10 @@ defmodule Operations.APNS.PushTest do
     test "sends a request to apns with proper headers",
          %{connection: connection, push_message: push_message} do
       with_mock HTTP2, [send_request: fn(_connection, headers, _jwt) -> headers end] do
-        {:ok, json} = Poison.encode(push_message)
+        {:ok, json} =
+          push_message
+          |> PushMessage.to_apns_map()
+          |> Poison.encode()
 
         headers = [
           {":method", "POST"},
@@ -69,7 +72,10 @@ defmodule Operations.APNS.PushTest do
     test "sends a request to apns with jwt within authorization header",
          %{connection: connection, push_message: push_message, jwt: jwt} do
       with_mock HTTP2, [send_request: fn(_connection, headers, _jwt) -> headers end] do
-        {:ok, json} = Poison.encode(push_message)
+        {:ok, json} =
+          push_message
+          |> PushMessage.to_apns_map()
+          |> Poison.encode()
 
         headers = [
           {":method", "POST"},
