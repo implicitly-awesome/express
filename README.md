@@ -215,6 +215,7 @@ Here are their structures:
   badge: pos_integer(),
   sound: String.t,
   category: String.t,
+  thread_id: String.t,
   alert: Express.APNS.PushMessage.Alert.t | String.t
 }
 
