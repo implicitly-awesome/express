@@ -16,7 +16,7 @@ Default consumer max demand is number_of_available_schedulers * 5 (multiplier ca
 # in your mix.exs file
 
 def deps do
-  {:express, "~> 1.1"}
+  {:express, "~> 1.1.1"}
 end
 
 # in your config.exs file (more in configuration section below)
@@ -46,7 +46,7 @@ push_message =
     acme: %{},
     aps: %APNS.PushMessage.Aps{
       badge: 1,
-      content_available: true,
+      content_available: 1,
       alert: %APNS.PushMessage.Alert{
         title: "Hello",
         body: "World"

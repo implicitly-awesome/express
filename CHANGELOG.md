@@ -1,3 +1,9 @@
+## [1.1.1] - 2017.10.26
+
+* Fixed a bug with field names of APNS payload (they should be dasherized).
+* Added a validation on APNS payload fields.
+* Added `thread_id` field to APNS aps structure
+
 ## [1.1.0] - 2017.10.26
 
 * JWT for APNS

@@ -31,7 +31,10 @@ defmodule Express.Operations.APNS.Push do
   end
 
   defp do_push(push_message, connection, jwt) do
-    {:ok, payload} = Poison.encode(push_message)
+    {:ok, payload} =
+      push_message
+      |> PushMessage.to_apns_map()
+      |> Poison.encode()
 
     if Mix.env == :dev, do: LogMessage.run!(message: payload, type: :info)
 

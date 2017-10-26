@@ -26,7 +26,7 @@ defmodule Express.Helpers.MapHelper do
 
   @spec stringify_keys(map()) :: map()
   def stringify_keys(map) when is_map(map) do
-    reduce_keys(map, fn(k)->
+    reduce_keys(map, fn(k) ->
       if is_atom(k), do: Atom.to_string(k), else: k
     end)
   end
