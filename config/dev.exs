@@ -6,12 +6,9 @@ config :express,
          key_id: System.get_env("EXPRESS_APNS_KEY_ID"),
          team_id: System.get_env("EXPRESS_APNS_TEAM_ID"),
          auth_key_path: System.get_env("EXPRESS_APNS_AUTH_KEY_PATH")
-        #  cert_path: System.get_env("EXPRESS_APNS_CERT_PATH"),
-        #  key_path: System.get_env("EXPRESS_APNS_KEY_PATH")
        ],
        fcm: [
-         api_key: System.get_env("EXPRESS_FCM_API_KEY"),
-         collapse_key: System.get_env("EXPRESS_FCM_COLLAPSE_KEY")
+         api_key: System.get_env("EXPRESS_FCM_API_KEY")
        ],
        buffer: [
          consumers_count: 10

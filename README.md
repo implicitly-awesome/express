@@ -5,13 +5,10 @@
 Library for sending push notifications.
 Supports Apple APNS and Google FCM services.
 
-Express - reviewed and remastered [Dufa](https://github.com/madeinussr/dufa) library with some core improvements:
+At the moment sends pushes to FCM via HTTP and to APNS via HTTP/2 (with either certificate or JWT).
 
-* utilizes poolboy (default pool size = 5, max_overflow = 1)
-* supervision tree was reviewed (worker per push (APNS/FCM), connection per supervisor (APNS))
-* DI in supervision tree allows to develop, maintain, test and maintain code without pain
-
-_battle tested in production_
+Uses GenServer in order to balance the load. Default buffer (producer) size is 5000.
+Default consumer max demand is number_of_available_schedulers * 5 (multiplier can be adjusted).
 
 ## Installation
 
@@ -19,7 +16,7 @@ _battle tested in production_
 # in your mix.exs file
 
 def deps do
-  {:express, "~> 1.0"}
+  {:express, "~> 1.5"}
 end
 
 # in your config.exs file (more in configuration section below)
@@ -31,8 +28,7 @@ config :express,
          key_path: System.get_env("EXPRESS_APNS_KEY_PATH")
        ],
        fcm: [
-         api_key: System.get_env("EXPRESS_FCM_API_KEY"),
-         collapse_key: System.get_env("EXPRESS_FCM_COLLAPSE_KEY")
+         api_key: System.get_env("EXPRESS_FCM_API_KEY")
        ]
 ```
 
@@ -103,7 +99,10 @@ FCM.push(push_message, opts, callback_fun)
 
 ## Configuration
 
-As described earlier, the simpliest configuration for Express might look like:
+Most of options can be changed in config file, but try to start with defaults.
+Every config option (except basics) has a default value.
+
+### Basic
 
 ```elixir
 config :express,
@@ -113,33 +112,77 @@ config :express,
          key_path: System.get_env("EXPRESS_APNS_KEY_PATH")
        ],
        fcm: [
-         api_key: System.get_env("EXPRESS_FCM_API_KEY"),
-         collapse_key: System.get_env("EXPRESS_FCM_COLLAPSE_KEY")
+         api_key: System.get_env("EXPRESS_FCM_API_KEY")
        ]
 ```
 
-However there are some options:
+There is an option:
 
-* for APNS you can provide also `cert` and `key` options (values/content of your certificate and key files respectively)
-  the priority of the options is: `cert_path > cert` and `key_path > key`
+_for APNS you can provide also `cert` and `key` options (values/content of your certificate and key files respectively) the priority of the options is: `cert_path > cert` and `key_path > key`_
 
-* you can edit poolboy configuration with `poolboy` option for both APNS and FCM:
+### Buffer
+
+There are all possible options for the buffer:
+
+```elixir
+config :express,
+       buffer: [
+         max_size: 5000,
+         consumers_count: 5,
+         consumer_demand_multiplier: 5,
+         adders_pool_config: [
+           {:name, {:local, :buffer_adders_pool}},
+           {:worker_module, Express.PushRequests.Adder},
+           {:size, 5},
+           {:max_overflow, 1}
+         ]
+       ]
+```
+
+### APNS
+
+Possible options for APNS:
+
+_you should provide either (cert_path & key_path) or (cert & key) or (key_id & team_id & auth_key_path)_
 
 ```elixir
 config :express,
        apns: [
          mode: :prod,
-         cert: System.get_env("EXPRESS_APNS_CERT"),
-         key: System.get_env("EXPRESS_APNS_KEY")
-       ],
+         # for requests with jwt
+         key_id: System.get_env("EXPRESS_APNS_KEY_ID"),
+         team_id: System.get_env("EXPRESS_APNS_TEAM_ID"),
+         auth_key_path: System.get_env("EXPRESS_APNS_AUTH_KEY_PATH"),
+
+         # for requests with a certificate
+         cert_path: System.get_env("EXPRESS_APNS_CERT_PATH"),
+         key_path: System.get_env("EXPRESS_APNS_KEY_PATH"),
+
+         # workers config (if default doesn't meet you requirements)
+         workers_pool_config: [
+           {:name, {:local, :apns_workers_pool}},
+           {:worker_module, Express.APNS.Worker},
+           {:size, 8},
+           {:max_overflow, 1}
+         ]
+       ]
+```
+
+### FCM
+
+Possible options for FCM:
+
+```elixir
+config :express,
        fcm: [
-         api_key: System.get_env("EXPRESS_FCM_API_KEY"),
-         collapse_key: System.get_env("EXPRESS_FCM_COLLAPSE_KEY")
-         poolboy: [
-           {:name, {:local, :fcm_supervisors_pool}},
-           {:worker_module, Express.FCM.Supervisor},
-           {:size, 10}, # default is 5
-           {:max_overflow, 3} # default is 1
+         api_key: System.get_env("EXPRESS_FCM_API_KEY")
+
+         # workers config (if default doesn't meet you requirements)
+         workers_pool_config: [
+           {:name, {:local, :fcm_workers_pool}},
+           {:worker_module, Express.FCM.Worker},
+           {:size, 8},
+           {:max_overflow, 1}
          ]
        ]
 ```
@@ -227,50 +270,44 @@ Nothing to add here, but:
 * at this moment the single option you can pass with `opts` argument - `delay`
   * it defines a delay in seconds for a push worker (a worker will push a message after that delay)
 
-## Bonus: supervision tree
+## Supervision tree
 
 ```elixir
-# FCM
-
-                   Express.Supervisor
-                           |
-          ---------------------------------
-          |                               |
-APNS Supervisors pool            FCM Supervisors pool
+                                     Application
                                           |
-                         -----------------------------------
-                         |            |                    |
-                         |    Workers Supervisor   Workers Supervisor
-                         |
-                 Workers Supervisor
-                         |
-                 ------------------
-                 |       |        |
-              Worker   Worker   Worker
-
-
-# APNS
-
-               Express.Supervisor
-                        |
-          -----------------------------
-          |                           |
-FCM Supervisors pool        APNS Supervisors pool
-                                      |
-                         ------------------------------------
-                         |            |                     |
-                         |   Workers Supervisor    Workers Supervisor
-                         |
-                Workers Supervisor
-                         |
-                ------------------
-                |                |
-                |    HTTP2 connection (a supervisor owns a connection)
-                |
-        ------------------
-        |       |        |
-    Worker   Worker   Worker (spawned with a connection passed as an argument)
-
+                                    Supervisor 
+                                          |
+          -----------------------------------------------------------------------
+          |                    |                        |                       |
+   APNS.Supervisor      FCM.Supervisor       PushRequests.Supervisor      TasksSupervisor
+          |                    |                                 |              |
+          |         -------------------------                    |   ------------------------
+          |         |                       |                    |   |          |           |
+          |  FCM.DelayedPushes      :fcm_workers_pool            |  Task       Task        Task
+          |                                 |                    |
+          |                     ------------------------         |
+          |                     |           |          |         |
+          |                 FCM.Worker  FCM.Worker  FCM.Worker   |
+          |                                                      |
+          |                               ----------------------------------------
+          |                               |               |                      |
+          |                     PushRequests.Buffer   :buffer_adders_pool   PushRequests.ConsumersSupervisor
+          |                                               |                      |
+          |                                        -------------         ----------------
+          |                                        |           |         |              |
+          |                                        |           |PushRequests.Consumer  PushRequests.Consumer
+          |                                        |           |
+          |                               PushRequests.Adder  PushRequests.Adder
+          |
+      ---------------------------------------------
+      |                      |                    |
+APNS.JWTHolder      APNS.DelayedPushes    :apns_workers_pool
+                                                  |
+                                         --------------------------------------
+                                         |                |                   |
+                                    APNS.Worker      APNS.Worker         APNS.Worker
+                                         |                |                   |
+                                  APNS.Connection   APNS.Connection    APNS.Connection
 ```
 
 ## LICENSE

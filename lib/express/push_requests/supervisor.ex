@@ -1,4 +1,8 @@
 defmodule Express.PushRequests.Supervisor do
+  @moduledoc """
+  Push requests supervisor. Responsible for the buffer, consumers and the buffer adders processes.
+  """
+
   use Supervisor
 
   alias Express.Operations.PoolboyConfigs

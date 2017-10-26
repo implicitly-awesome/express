@@ -1,4 +1,6 @@
 defmodule Express.PushRequests.PushRequest do
+  @moduledoc "Defines structure for a push request. Push requests are stored in the buffer."
+
   alias Express.APNS.PushMessage, as: APNSPushMessage
   alias Express.FCM.PushMessage, as: FCMPushMessage
 

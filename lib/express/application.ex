@@ -1,4 +1,6 @@
 defmodule Express.Application do
+  @moduledoc "The application. Starts the main supervisor."
+
   use Application
 
   def start(_type, _args) do

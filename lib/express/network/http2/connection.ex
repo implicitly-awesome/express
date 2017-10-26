@@ -1,4 +1,6 @@
 defmodule Express.Network.HTTP2.Connection do
+  @moduledoc "Defines a structure for general HTTP2 connection."
+
   alias Express.Network.HTTP2
 
   @derive [Poison.Encoder]
@@ -10,6 +12,8 @@ defmodule Express.Network.HTTP2.Connection do
 
   defstruct ~w(client provider socket ssl_config)a
 
+  @doc "Structure constructor."
+  @spec new(Keyword.t) :: t
   def new(args) do
     if args[:ssl_config] do
       new_with_ssl_config(args)

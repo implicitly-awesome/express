@@ -1,4 +1,6 @@
 defmodule Express.Supervisor do
+  @moduledoc "Sets up Express's supervision tree."
+
   use Supervisor
 
   def start_link do

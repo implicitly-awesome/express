@@ -1,4 +1,23 @@
 defmodule Express.PushRequests.Buffer do
+  @moduledoc """
+  GenStage producer. Acts like a buffer for incoming push messages.
+  Default buffer size is 5000 events.
+  This size can be adjusted via config file:
+
+      config :express,
+            buffer: [
+              max_size: 10_000
+            ]
+
+  Spawns number of GenStage consumers on init. Default amount of the consumers is 5.
+  This amount can be changed in config file:
+
+      config :express,
+          buffer: [
+            consumers_count: 10
+          ]
+  """
+
   use GenStage
 
   alias Express.PushRequests.{PushRequest, ConsumersSupervisor}
@@ -26,6 +45,7 @@ defmodule Express.PushRequests.Buffer do
     {:noreply, [], state}
   end
 
+  @doc "Adds a push request to the buffer."
   @spec add(PushRequest.t) :: :ok | {:error, any()}
   def add(push_request), do: GenServer.cast(__MODULE__, {:add, push_request})
 

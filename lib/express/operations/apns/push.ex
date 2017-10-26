@@ -7,8 +7,8 @@ defmodule Express.Operations.APNS.Push do
 
   Takes parameters:
   * `connection` (a connection to send push message through)
-  * `push_message` (a push message to send)
   * `jwt` (a JWT for a request (if you don't use ssl config))
+  * `push_message` (a push message to send)
   """
 
   use Exop.Operation

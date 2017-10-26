@@ -1,4 +1,20 @@
 defmodule Express.PushRequests.Consumer do
+  @moduledoc """
+  GenStage consumer.
+  Retrieves push requests from `Express.PushRequests.Buffer`,
+  gets a proper worker from one of poolboy pools and sends a push message via it.
+
+  Maximum demand (size of a bunch) depends on the number of schedulers available
+  for BEAM VM on the current machine: `System.schedulers_online() * 5`
+
+  The default multiplier (5) can be adjusted via config:
+
+      config :express,
+        buffer: [
+          consumer_demand_multiplier: 10
+        ]
+  """
+
   use GenStage
 
   alias Express.APNS.PushMessage, as: APNSPushMessage
@@ -6,10 +22,13 @@ defmodule Express.PushRequests.Consumer do
   alias Express.APNS.Worker, as: APNSWorker
   alias Express.FCM.Worker, as: FCMWorker
   alias Express.Operations.PoolboyConfigs
+  alias Express.PushRequests.PushRequest
 
-  @max_demand System.schedulers_online() * 5
+  @max_demand System.schedulers_online() * (Application.get_env(:express, :buffer)[:consumer_demand_multiplier] || 5)
 
   defmodule State do
+    @moduledoc "Represents state structure of `Express.PushRequests.Consumer`"
+
     @type t :: %__MODULE__{producer: pid() | atom(),
                            subscription: pid() | atom()}
 
@@ -45,6 +64,9 @@ defmodule Express.PushRequests.Consumer do
     {:noreply, [], state}
   end
 
+  @spec handle_push_requests([PushRequest.t], {pid(), any()}, State.t) :: :ok |
+                                                                          :noconnect |
+                                                                          :nosuspend
   defp handle_push_requests(push_requests, _from, state)
        when is_list(push_requests) and length(push_requests) > 0 do
     push_requests
@@ -57,6 +79,7 @@ defmodule Express.PushRequests.Consumer do
     ask_more(state)
   end
 
+  @spec do_push(PushRequest.t, State.t) :: any()
   defp do_push(%{push_message: %APNSPushMessage{} = push_message,
                  opts: opts, callback_fun: callback_fun}, _state) do
     :poolboy.transaction(PoolboyConfigs.apns_workers().name, fn(worker) ->
@@ -71,6 +94,9 @@ defmodule Express.PushRequests.Consumer do
   end
   defp do_push(_push_request, _state), do: {:error, :unknown_push_message_type}
 
+  @spec ask_more(State.t) :: :ok |
+                             :noconnect |
+                             :nosuspend
   defp ask_more(state) do
     GenStage.ask(state.subscription, @max_demand)
   end
