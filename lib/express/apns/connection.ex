@@ -18,7 +18,9 @@ defmodule Express.APNS.Connection do
   end
 
   def need_ssl_config? do
-    Application.get_env(:express, :apns)[:cert_path] &&
-      Application.get_env(:express, :apns)[:key_path]
+    (Application.get_env(:express, :apns)[:cert_path] ||
+     Application.get_env(:express, :apns)[:cert]) &&
+    (Application.get_env(:express, :apns)[:key_path] ||
+     Application.get_env(:express, :apns)[:key])
   end
 end

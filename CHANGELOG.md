@@ -1,3 +1,7 @@
+## [1.1.3] - 2017.10.27
+
+* fixed APNS :cert & :key config attributes resolving
+
 ## [1.1.2] - 2017.10.27
 
 * got rid enforced_keys from Express.FCM.PushMessage.Notification
