@@ -1,3 +1,7 @@
+## [1.1.2] - 2017.10.27
+
+* got rid enforced_keys from Express.FCM.PushMessage.Notification
+
 ## [1.1.1] - 2017.10.26
 
 * Fixed a bug with field names of APNS payload (they should be dasherized).
