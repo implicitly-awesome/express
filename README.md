@@ -24,11 +24,11 @@ end
 config :express,
        apns: [
          mode: :prod,
-         cert_path: System.get_env("EXPRESS_APNS_CERT_PATH"),
-         key_path: System.get_env("EXPRESS_APNS_KEY_PATH")
+         cert_path: "path_to_your_cert.pem",
+         key_path: "path_to_your_key.pem"
        ],
        fcm: [
-         api_key: System.get_env("EXPRESS_FCM_API_KEY")
+         api_key: "your_key"
        ]
 ```
 
@@ -110,11 +110,11 @@ Every option from configuration module can be overriden by appropriate option in
 config :express,
        apns: [
          mode: :prod,
-         cert_path: System.get_env("EXPRESS_APNS_CERT_PATH"),
-         key_path: System.get_env("EXPRESS_APNS_KEY_PATH")
+         cert_path: "your_cert_path.pem",
+         key_path: "your_key_path.pem"
        ],
        fcm: [
-         api_key: System.get_env("EXPRESS_FCM_API_KEY")
+         api_key: "your_api_key"
        ]
 ```
 
@@ -153,13 +153,13 @@ config :express,
        apns: [
          mode: :prod,
          # for requests with jwt
-         key_id: System.get_env("EXPRESS_APNS_KEY_ID"),
-         team_id: System.get_env("EXPRESS_APNS_TEAM_ID"),
-         auth_key_path: System.get_env("EXPRESS_APNS_AUTH_KEY_PATH"),
+         key_id: "your_key_id",
+         team_id: "your_team_id",
+         auth_key_path: "your_auth_key_path.p8",
 
          # for requests with a certificate
-         cert_path: System.get_env("EXPRESS_APNS_CERT_PATH"),
-         key_path: System.get_env("EXPRESS_APNS_KEY_PATH"),
+         cert_path: "your_cert_path.pem",
+         key_path: "your_key_path.pem",
 
          # workers config (if default doesn't meet you requirements)
          workers_pool_config: [
@@ -178,7 +178,7 @@ Possible options for FCM:
 ```elixir
 config :express,
        fcm: [
-         api_key: System.get_env("EXPRESS_FCM_API_KEY")
+         api_key: "your_api_key"
 
          # workers config (if default doesn't meet you requirements)
          workers_pool_config: [
@@ -228,15 +228,15 @@ defmodule YourApp.ExpressConfig.Dev do
   def apns do
     [
       mode: :dev,
-      key_id: "your_apns_key_id",
-      team_id: "your_apns_team_id",
-      auth_key: "your_apns_auth_key"
+      key_id: "your_key_id",
+      team_id: "your_team_id",
+      auth_key: "your_auth_key"
     ]
   end
 
   def fcm do
     [
-      api_key: "your_fcm_api_key"
+      api_key: "your_api_key"
     ]
   end
 end
