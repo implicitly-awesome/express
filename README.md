@@ -260,6 +260,8 @@ config :express,
 
 _configuration in config files has the highest priority_
 
+*Do not forget to add configuration module to .gitignore if it contains secret data*
+
 ## Push message structure
 
 You should construct `%Express.APNS.PushMessage{}` and `%Express.FCM.PushMessage{}`
