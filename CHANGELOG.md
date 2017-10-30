@@ -1,3 +1,8 @@
+## [1.2.0] - 2017.10.30
+
+* added APNS :auth_key as p8 file content in config
+* configuration via module
+
 ## [1.1.3] - 2017.10.27
 
 * fixed APNS :cert & :key config attributes resolving

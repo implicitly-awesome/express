@@ -1,6 +1,7 @@
 defmodule Operations.PoolboyConfigsTest do
   @moduledoc false
 
+  alias Express.Configuration
   alias Express.Operations.PoolboyConfigs
 
   use ExUnit.Case, async: true
@@ -37,7 +38,7 @@ defmodule Operations.PoolboyConfigsTest do
 
   describe "values from config file" do
     test "buffer_adders/0" do
-      from_config = Application.get_env(:express, :buffer)[:adders_pool_config]
+      from_config = Configuration.Buffer.adders_pool_config()
 
       assert from_config == PoolboyConfigs.buffer_adders().config
     end

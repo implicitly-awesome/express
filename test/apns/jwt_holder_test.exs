@@ -19,7 +19,7 @@ defmodule APNS.JWTHolderTest do
     jwt =
       jwt
       |> token()
-      |> with_signer(es256(JWTHolder.auth_key()))
+      |> with_signer(es256(JWTHolder.apns_auth_key()))
       |> verify()
 
     assert (jwt.claims |> Map.keys() |> Enum.any?())

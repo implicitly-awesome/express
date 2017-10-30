@@ -4,6 +4,7 @@ defmodule Express.APNS.JWTHolder do
   import Joken
 
   alias JOSE.JWK
+  alias Express.Configuration
 
   @algorithm "ES256"
   @ttl 50 * 60
@@ -41,25 +42,32 @@ defmodule Express.APNS.JWTHolder do
 
   defp new(iat) do
     %{
-      "iss" => Application.get_env(:express, :apns)[:team_id],
+      "iss" => Configuration.APNS.team_id(),
       "iat" => Timex.to_unix(iat)
     }
     |> token()
     |> with_header_arg("alg", @algorithm)
-    |> with_header_arg("kid", Application.get_env(:express, :apns)[:key_id])
-    |> with_signer(es256(auth_key()))
+    |> with_header_arg("kid", Configuration.APNS.key_id())
+    |> with_signer(es256(apns_auth_key()))
     |> sign()
     |> get_compact()
   end
 
-  def auth_key do
-    :express
-    |> Application.get_env(:apns)
-    |> Keyword.get(:auth_key_path)
-    |> JWK.from_pem_file
+  def apns_auth_key do
+    if path = auth_key_path() do
+      JWK.from_pem_file(path)
+    else
+      if key = auth_key() do
+        key
+        |> String.replace("\\n", "\n")
+        |> JWK.from_pem()
+      end
+    end
   end
 
-  def expired?(iat) do
-    Timex.diff(Timex.now(), iat, :seconds) > @ttl
-  end
+  def expired?(iat), do: Timex.diff(Timex.now(), iat, :seconds) > @ttl
+
+  defp auth_key_path, do: Configuration.APNS.auth_key_path()
+
+  defp auth_key, do: Configuration.APNS.auth_key()
 end

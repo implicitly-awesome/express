@@ -3,6 +3,7 @@ defmodule Express.Network.HTTP2 do
   Module with functions for establishing and working with HTTP2-connection.
   """
 
+  alias Express.Configuration
   alias Express.Network.HTTP2.{Connection, Client}
   alias Express.APNS
 
@@ -29,7 +30,7 @@ defmodule Express.Network.HTTP2 do
   end
 
   def connect(client, provider) do
-    mode = Application.get_env(:express, :apns)[:mode]
+    mode = Configuration.APNS.mode()
 
     case client.open_socket(provider, mode, 0) do
       {:ok, socket} ->

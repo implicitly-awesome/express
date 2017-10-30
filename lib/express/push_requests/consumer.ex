@@ -17,14 +17,13 @@ defmodule Express.PushRequests.Consumer do
 
   use GenStage
 
+  alias Express.Configuration
   alias Express.APNS.PushMessage, as: APNSPushMessage
   alias Express.FCM.PushMessage, as: FCMPushMessage
   alias Express.APNS.Worker, as: APNSWorker
   alias Express.FCM.Worker, as: FCMWorker
   alias Express.Operations.PoolboyConfigs
   alias Express.PushRequests.PushRequest
-
-  @max_demand System.schedulers_online() * (Application.get_env(:express, :buffer)[:consumer_demand_multiplier] || 5)
 
   defmodule State do
     @moduledoc "Represents state structure of `Express.PushRequests.Consumer`"
@@ -98,6 +97,9 @@ defmodule Express.PushRequests.Consumer do
                              :noconnect |
                              :nosuspend
   defp ask_more(state) do
-    GenStage.ask(state.subscription, @max_demand)
+    GenStage.ask(
+      state.subscription,
+      System.schedulers_online() * (Configuration.Buffer.consumer_demand_multiplier() || 5)
+    )
   end
 end

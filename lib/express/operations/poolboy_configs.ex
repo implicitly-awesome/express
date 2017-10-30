@@ -1,6 +1,8 @@
 defmodule Express.Operations.PoolboyConfigs do
   @moduledoc "Returns poolboy configurations."
 
+  alias Express.Configuration
+
   @doc """
   Returns poolboy configuration for the Buffer adders.
   If configuration described in config file - returns it.
@@ -42,7 +44,7 @@ defmodule Express.Operations.PoolboyConfigs do
 
   @spec buffer_adders_pool_config() :: Keyword.t
   defp buffer_adders_pool_config do
-    Application.get_env(:express, :buffer)[:adders_pool_config] ||
+    Configuration.Buffer.adders_pool_config() ||
     [
       {:name, {:local, :buffer_adders_pool}},
       {:worker_module, Express.PushRequests.Adder},
@@ -59,7 +61,7 @@ defmodule Express.Operations.PoolboyConfigs do
 
   @spec fcm_workers_pool_config() :: Keyword.t
   defp fcm_workers_pool_config do
-    Application.get_env(:express, :fcm)[:workers_pool_config] ||
+    Configuration.FCM.workers_pool_config() ||
     [
       {:name, {:local, :fcm_workers_pool}},
       {:worker_module, Express.FCM.Worker},
@@ -75,7 +77,7 @@ defmodule Express.Operations.PoolboyConfigs do
 
   @spec apns_workers_pool_config() :: Keyword.t
   defp apns_workers_pool_config do
-    Application.get_env(:express, :apns)[:workers_pool_config] ||
+    Configuration.APNS.workers_pool_config() ||
     [
       {:name, {:local, :apns_workers_pool}},
       {:worker_module, Express.APNS.Worker},

@@ -9,7 +9,7 @@ defmodule Express.Mixfile do
   def project do
     [
       app: :express,
-      version: "1.1.3",
+      version: "1.2.0",
       elixir: "~> 1.4",
       name: "Express",
       description: @description,

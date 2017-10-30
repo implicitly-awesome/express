@@ -20,9 +20,8 @@ defmodule Express.PushRequests.Buffer do
 
   use GenStage
 
+  alias Express.Configuration
   alias Express.PushRequests.{PushRequest, ConsumersSupervisor}
-
-  @max_buffer_size (Application.get_env(:express, :buffer)[:max_size] || 5000)
 
   def start_link do
     GenStage.start_link(__MODULE__, :ok, name: __MODULE__)
@@ -31,12 +30,11 @@ defmodule Express.PushRequests.Buffer do
   def init(:ok) do
     send(self(), :init)
 
-    {:producer, [], buffer_size: @max_buffer_size}
+    {:producer, [], buffer_size: (Configuration.Buffer.max_size() || 5000)}
   end
 
   def handle_info(:init, state) do
-    consumers_count =
-      Application.get_env(:express, :buffer)[:consumers_count] || 5
+    consumers_count = Configuration.Buffer.consumers_count() || 5
 
     Enum.each(1..consumers_count, fn(_) ->
       ConsumersSupervisor.start_consumer()

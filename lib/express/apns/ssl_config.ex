@@ -3,6 +3,7 @@ defmodule Express.APNS.SSLConfig do
   Provides APNS SSL configuration constructor.
   """
 
+  alias Express.Configuration
   alias Express.Network.HTTP2.SSLConfig
 
   @doc "Creates SSL configuration with provided `opts`"
@@ -29,23 +30,23 @@ defmodule Express.APNS.SSLConfig do
 
   @doc "Returns apns mode from configuration"
   @spec config_mode() :: atom() | String.t | nil
-  def config_mode, do: Application.get_env(:express, :apns)[:mode]
+  def config_mode, do: Configuration.APNS.mode()
 
   @doc "Returns SSL certificate path from configuration"
   @spec config_cert_path() :: String.t | nil
-  def config_cert_path, do: Application.get_env(:express, :apns)[:cert_path]
+  def config_cert_path, do: Configuration.APNS.cert_path()
 
   @doc "Returns SSL key path from configuration"
   @spec config_key_path() :: String.t | nil
-  def config_key_path, do: Application.get_env(:express, :apns)[:key_path]
+  def config_key_path, do: Configuration.APNS.key_path()
 
   @doc "Returns SSL certificate from configuration"
   @spec config_cert() :: String.t | nil
-  def config_cert, do: Application.get_env(:express, :apns)[:cert]
+  def config_cert, do: Configuration.APNS.cert()
 
   @doc "Returns SSL key from configuration"
   @spec config_key() :: String.t | nil
-  def config_key, do: Application.get_env(:express, :apns)[:key]
+  def config_key, do: Configuration.APNS.key()
 
   @doc "Returns SSL certificate by file path"
   @spec cert(String.t) :: binary()

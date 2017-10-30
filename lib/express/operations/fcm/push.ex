@@ -14,6 +14,7 @@ defmodule Express.Operations.FCM.Push do
   use Exop.Operation
   require Logger
 
+  alias Express.Configuration
   alias Express.Operations.LogMessage
   alias Express.FCM.PushMessage
 
@@ -82,7 +83,7 @@ defmodule Express.Operations.FCM.Push do
 
   @spec api_key_for(Keyword.t) :: String.t
   defp api_key_for(opts) do
-    opts[:api_key] || Application.get_env(:express, :fcm)[:api_key]
+    opts[:api_key] || Configuration.FCM.api_key()
   end
 
   @spec handle_response(PushMessage.t, {String.t, String.t}) :: :ok

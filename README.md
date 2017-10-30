@@ -16,7 +16,7 @@ Default consumer max demand is number_of_available_schedulers * 5 (multiplier ca
 # in your mix.exs file
 
 def deps do
-  {:express, "~> 1.1.3"}
+  {:express, "~> 1.2.0"}
 end
 
 # in your config.exs file (more in configuration section below)
@@ -99,8 +99,10 @@ FCM.push(push_message, opts, callback_fun)
 
 ## Configuration
 
-Most of options can be changed in config file, but try to start with defaults.
-Every config option (except basics) has a default value.
+Express can be configured by either config file options or configuration module.
+
+Configuration module is preferable, because it allows you to change some config options dynamically.
+Every option from configuration module can be overriden by appropriate option in config file.
 
 ### Basic
 
@@ -117,8 +119,6 @@ config :express,
 ```
 
 There is an option:
-
-_for APNS you can provide also `cert` and `key` options (values/content of your certificate and key files respectively) the priority of the options is: `cert_path > cert` and `key_path > key`_
 
 ### Buffer
 
@@ -143,7 +143,10 @@ config :express,
 
 Possible options for APNS:
 
-_you should provide either (cert_path & key_path) or (cert & key) or (key_id & team_id & auth_key_path)_
+_You should provide either (cert_path & key_path) or (cert & key) or (key_id & team_id & auth_key_path)._
+_Every "*_path" option has the priority over corresponding option with a file content: `cert_path > cert`, `key_path > key` and `auth_key_path > auth_key`._
+
+*_If you'd like to use cert/key file content, you should use the original content from a file (even with new-line symbols)_*
 
 ```elixir
 config :express,
@@ -186,6 +189,68 @@ config :express,
          ]
        ]
 ```
+
+### Configuration module
+
+In order to use configuration module, you need:
+
+* create a module that conforms `Express.Configuration` behaviour
+* define that module in config file
+
+`Express.Configuration` behaviour is pretty simple, all you need is define functions:
+
+```elixir
+@callback buffer() :: Keyword.t
+@callback apns() :: Keyword.t
+@callback fcm() :: Keyword.t
+```
+
+For example (_for more possible options see the sections above_):
+
+```elixir
+defmodule YourApp.ExpressConfig.Dev do
+  @behaviour Express.Configuration
+
+  def buffer do
+    [
+      consumers_count: 10
+    ]
+  end
+
+  def apns do
+    [
+      mode: :dev,
+      key_id: "your_apns_key_id",
+      team_id: "your_apns_team_id",
+      auth_key: "your_apns_auth_key"
+    ]
+  end
+
+  def fcm do
+    [
+      api_key: "your_fcm_api_key"
+    ]
+  end
+end
+```
+
+Then in `config/dev.exs`:
+
+```elixir
+config :express, module: YourApp.ExpressConfig.Dev
+```
+
+As said earlier, you can even override your configuration module options later in config file:
+
+```elixir
+config :express,
+       module: YourApp.ExpressConfig.Dev,
+       buffer: [
+         consumers_count: 5
+       ]
+```
+
+_configuration in config files has the highest priority_
 
 ## Push message structure
 

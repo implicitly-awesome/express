@@ -1,4 +1,9 @@
 defmodule Express.APNS.Connection do
+  @moduledoc """
+  Establishes a connection to APNS with proper configuration.
+  """
+
+  alias Express.Configuration
   alias Express.Operations.EstablishHTTP2Connection
   alias Express.APNS.SSLConfig
   alias Express.Network.HTTP2.ChatterboxClient
@@ -18,9 +23,7 @@ defmodule Express.APNS.Connection do
   end
 
   def need_ssl_config? do
-    (Application.get_env(:express, :apns)[:cert_path] ||
-     Application.get_env(:express, :apns)[:cert]) &&
-    (Application.get_env(:express, :apns)[:key_path] ||
-     Application.get_env(:express, :apns)[:key])
+    (Configuration.APNS.cert_path() || Configuration.APNS.cert()) &&
+    (Configuration.APNS.key_path() || Configuration.APNS.key())
   end
 end
