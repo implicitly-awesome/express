@@ -7,4 +7,5 @@
 erl_crash.dump
 *.ez
 live_test.ex
-/lib/express/configuration
+/lib/express/configuration/dev.ex
+/lib/express/configuration/prod.ex
