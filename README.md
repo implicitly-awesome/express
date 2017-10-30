@@ -197,6 +197,14 @@ In order to use configuration module, you need:
 * create a module that conforms `Express.Configuration` behaviour
 * define that module in config file
 
+Let a function return empty list `[]` if you want all default options for a section:
+
+```elixir
+  def buffer do
+    [] #Express will use default options
+  end
+```
+
 `Express.Configuration` behaviour is pretty simple, all you need is define functions:
 
 ```elixir
