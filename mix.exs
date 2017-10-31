@@ -3,13 +3,13 @@ defmodule Express.Mixfile do
 
   @description """
   Library for sending push notifications.
-  Supports Apple APNS and Google FCM services.
+  Supports Apple APNS (with either ssl certificate or JWT) and Google FCM services.
   """
 
   def project do
     [
       app: :express,
-      version: "1.2.0",
+      version: "1.2.1",
       elixir: "~> 1.4",
       name: "Express",
       description: @description,

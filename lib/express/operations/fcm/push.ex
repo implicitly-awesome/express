@@ -54,7 +54,7 @@ defmodule Express.Operations.FCM.Push do
     case HTTPoison.post("#{@uri_path}", payload, headers) do
       {:ok, response = %HTTPoison.Response{status_code: 200 = status,
                                            body: body}} ->
-        if Mix.env == :dev do
+        if Application.get_env(:express, :environment) == :dev do
           LogMessage.run!(message: payload, type: :info)
           LogMessage.run!(message: inspect(response), type: :info)
         end

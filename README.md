@@ -5,7 +5,7 @@
 Library for sending push notifications.
 Supports Apple APNS and Google FCM services.
 
-At the moment sends pushes to FCM via HTTP and to APNS via HTTP/2 (with either certificate or JWT).
+At the moment sends pushes to FCM via HTTP and to APNS via HTTP/2 (with either ssl certificate or JWT).
 
 Uses GenServer in order to balance the load. Default buffer (producer) size is 5000.
 Default consumer max demand is number_of_available_schedulers * 5 (multiplier can be adjusted).
@@ -16,7 +16,7 @@ Default consumer max demand is number_of_available_schedulers * 5 (multiplier ca
 # in your mix.exs file
 
 def deps do
-  {:express, "~> 1.2.0"}
+  {:express, "~> 1.2.1"}
 end
 
 # in your config.exs file (more in configuration section below)

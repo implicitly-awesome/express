@@ -36,7 +36,9 @@ defmodule Express.Operations.APNS.Push do
       |> PushMessage.to_apns_map()
       |> Poison.encode()
 
-    if Mix.env == :dev, do: LogMessage.run!(message: payload, type: :info)
+    if Application.get_env(:express, :environment) == :dev do
+      LogMessage.run!(message: payload, type: :info)
+    end
 
     headers = headers_for(push_message, payload, jwt)
 

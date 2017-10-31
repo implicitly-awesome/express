@@ -8,7 +8,7 @@ defmodule Express.Application do
 
     children = [supervisor(Express.Supervisor, [], restart: :permanent)]
 
-    if Mix.env() == :test do
+    if Application.get_env(:express, :environment) == :test do
       Supervisor.start_link([], strategy: :one_for_one)
     else
       Supervisor.start_link(children, strategy: :one_for_one)

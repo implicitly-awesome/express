@@ -1,3 +1,7 @@
+## [1.2.1] - 2017.10.31
+
+* does not rely on Mix.env (uses Application.get_env(:express, :environment) instead)
+
 ## [1.2.0] - 2017.10.30
 
 * added APNS :auth_key as p8 file content in config

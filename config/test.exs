@@ -8,4 +8,5 @@ config :express,
        module: Express.Configuration.Test,
        buffer: [
          max_size: 1000
-       ]
+       ],
+       environment: :test
