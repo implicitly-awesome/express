@@ -8,6 +8,8 @@ defmodule Express.APNS.Worker do
   alias Express.Operations.APNS.Push
   alias Express.APNS.Connection, as: APNSConnection
 
+  require Logger
+
   defmodule State do
     @type t :: %__MODULE__{
       connection: HTTP2.Connection.t,
@@ -30,8 +32,16 @@ defmodule Express.APNS.Worker do
     end
   end
 
+  def connection_alive?(worker), do: GenServer.call(worker, :check_connection)
+
   def push(worker, push_message, opts, callback_fun) do
     GenServer.call(worker, {:push, push_message, opts, callback_fun})
+  end
+
+  def stop(worker), do: GenServer.stop(worker, :shutdown)
+
+  def handle_call(:check_connection, _from, state) do
+    {:reply, _connection_alive?(state), state}
   end
 
   def handle_call({:push, push_message, _opts, callback_fun}, _from, state) do
@@ -67,6 +77,11 @@ defmodule Express.APNS.Worker do
 
     {:noreply, state}
   end
+
+  defp _connection_alive?(%{connection: %{socket: pid}}) when is_pid(pid) do
+    Process.alive?(pid)
+  end
+  defp _connection_alive?(_state), do: false
 
   defp handle_response({headers, body} = _response, state, callback_fun)
        when (is_function(callback_fun) or is_nil(callback_fun)) do

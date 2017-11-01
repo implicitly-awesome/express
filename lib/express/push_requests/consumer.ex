@@ -25,6 +25,8 @@ defmodule Express.PushRequests.Consumer do
   alias Express.Operations.PoolboyConfigs
   alias Express.PushRequests.PushRequest
 
+  require Logger
+
   defmodule State do
     @moduledoc "Represents state structure of `Express.PushRequests.Consumer`"
 
@@ -39,6 +41,7 @@ defmodule Express.PushRequests.Consumer do
 
   def init(:ok) do
     state = %State{producer: Express.PushRequests.Buffer}
+    Process.flag(:trap_exit, true)
     send(self(), :init)
 
     {:consumer, state}
@@ -47,6 +50,10 @@ defmodule Express.PushRequests.Consumer do
   def handle_info(:init, state) do
     GenStage.async_subscribe(self(), to: state.producer)
 
+    {:noreply, [], state}
+  end
+
+  def handle_info({:EXIT, _from, _reason}, state) do
     {:noreply, [], state}
   end
 
@@ -66,13 +73,24 @@ defmodule Express.PushRequests.Consumer do
   @spec handle_push_requests([PushRequest.t], {pid(), any()}, State.t) :: :ok |
                                                                           :noconnect |
                                                                           :nosuspend
-  defp handle_push_requests(push_requests, _from, state)
+  defp handle_push_requests(push_requests, from, state)
        when is_list(push_requests) and length(push_requests) > 0 do
-    push_requests
-    |> Task.async_stream(fn(pr) -> do_push(pr, state) end)
-    |> Enum.into([])
+    push_results =
+      push_requests
+      |> Task.async_stream(fn(pr) -> do_push(pr, state) end)
+      |> Enum.into([])
 
-    ask_more(state)
+    killed_workers = killed_workers(push_results)
+    if Enum.count(killed_workers) > 0 do
+      failed_push_requests =
+        Enum.map(killed_workers, fn({_, {_, _, push_request}}) ->
+          push_request
+        end)
+
+      handle_push_requests(failed_push_requests, from, state)
+    else
+      ask_more(state)
+    end
   end
   defp handle_push_requests(_push_requests, _from, state) do
     ask_more(state)
@@ -80,10 +98,17 @@ defmodule Express.PushRequests.Consumer do
 
   @spec do_push(PushRequest.t, State.t) :: any()
   defp do_push(%{push_message: %APNSPushMessage{} = push_message,
-                 opts: opts, callback_fun: callback_fun}, _state) do
-    :poolboy.transaction(PoolboyConfigs.apns_workers().name, fn(worker) ->
+                 opts: opts, callback_fun: callback_fun} = push_request, _state) do
+    worker = :poolboy.checkout(PoolboyConfigs.apns_workers().name)
+
+    if APNSWorker.connection_alive?(worker) do
       APNSWorker.push(worker, push_message, opts, callback_fun)
-    end)
+      :poolboy.checkin(PoolboyConfigs.apns_workers().name, worker)
+    else
+      :poolboy.checkin(PoolboyConfigs.apns_workers().name, worker)
+      APNSWorker.stop(worker)
+      {:error, :worker_killed, push_request}
+    end
   end
   defp do_push(%{push_message: %FCMPushMessage{} = push_message,
                  opts: opts, callback_fun: callback_fun}, _state) do
@@ -92,6 +117,13 @@ defmodule Express.PushRequests.Consumer do
     end)
   end
   defp do_push(_push_request, _state), do: {:error, :unknown_push_message_type}
+
+  @spec killed_workers([Keyword.t]) :: [Keyword.t]
+  defp killed_workers(push_results) do
+    Enum.filter(push_results, fn({_, v}) ->
+      is_tuple(v) && elem(v, 1) == :worker_killed
+    end)
+  end
 
   @spec ask_more(State.t) :: :ok |
                              :noconnect |

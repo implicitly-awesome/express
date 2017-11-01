@@ -1,3 +1,8 @@
+## [1.2.2] - 2017.10.31
+
+* APNS: worker checks if a connection alive before push
+* APNS: tries to redeliver push messages of crashed workers
+
 ## [1.2.1] - 2017.10.31
 
 * does not rely on Mix.env (uses Application.get_env(:express, :environment) instead)
