@@ -1,3 +1,10 @@
+## [1.2.4] - 2017.11.01
+
+* refactored APNS worker check
+* APNS push operation async option
+* timeouts handling
+* some other improvements
+
 ## [1.2.3] - 2017.10.31
 
 * checks if APNS worker is alive before push

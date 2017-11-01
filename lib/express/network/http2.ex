@@ -46,10 +46,22 @@ defmodule Express.Network.HTTP2 do
     end
   end
 
-  @doc "Sends a request via a connection with `headers` and `payload`"
+  @doc "Sends an async request via a connection with `headers` and `payload`"
   @spec send_request(Connection.t, list(), String.t) :: {:ok, pid()} | any()
   def send_request(%{client: client, socket: socket} = _connection, headers, payload) do
     client.send_request(socket, headers, payload)
+  end
+
+  @doc "Sends a sync request via a connection with `headers` and `payload`"
+  @spec sync_request(Connection.t, list(), String.t) :: any()
+  def sync_request(%{client: client, socket: socket} = _connection, headers, payload) do
+    client.sync_request(socket, headers, payload)
+  end
+
+  @doc "Sends a ping via a connection"
+  @spec ping(Connection.t) :: :ok
+  def ping(%{client: client, socket: socket} = _connection) do
+    client.ping(socket)
   end
 
   @doc "Gets a response from connection stream"

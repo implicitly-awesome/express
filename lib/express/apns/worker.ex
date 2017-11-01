@@ -10,8 +10,6 @@ defmodule Express.APNS.Worker do
 
   require Logger
 
-  @opened_frames_limit 5
-
   defmodule State do
     @type t :: %__MODULE__{
       connection: HTTP2.Connection.t,
@@ -34,19 +32,31 @@ defmodule Express.APNS.Worker do
     end
   end
 
-  def connection_alive?(worker), do: GenServer.call(worker, :check_connection)
-
   def push(worker, push_message, opts, callback_fun) do
-    GenServer.call(worker, {:push, push_message, opts, callback_fun})
-  end
-
-  def stop(worker), do: GenServer.stop(worker, :shutdown)
-
-  def handle_call(:check_connection, _from, state) do
-    {:reply, _connection_alive?(state), state}
+    GenServer.call(worker, {:push, push_message, opts, callback_fun}, 2000)
   end
 
   def handle_call({:push, push_message, _opts, callback_fun}, _from, state) do
+    with true <- Process.alive?(state.connection.socket),
+         {:ok, {headers, body}} <- (push_message
+                                    |> push_params(state)
+                                    |> Push.run())
+    do
+      handle_response({headers, body}, state, callback_fun)
+      {:reply, :pushed, state}
+    else
+      {:error, reason} ->
+        {:stop, :normal, {:error, reason}, state}
+      _ ->
+        {:stop, :normal, {:error, :push_error}, state}
+    end
+  end
+
+  def handle_info(:timeout, state) do
+    {:stop, :normal, {:error, :timeout}, state}
+  end
+
+  defp push_params(push_message, state) do
     params =
       if is_map(state.connection.ssl_config) do
         [
@@ -61,33 +71,10 @@ defmodule Express.APNS.Worker do
         ]
       end
 
-    Push.run!(params)
-
-    new_state =
-      state
-      |> Map.put(:push_message, push_message)
-      |> Map.put(:callback_fun, callback_fun)
-
-    {:reply, :ok, new_state}
+    Keyword.put(params, :async, false)
   end
 
-  def handle_info({:END_STREAM, stream},
-                  %{connection: connection,
-                    callback_fun: callback_fun} = state) do
-    {:ok, {headers, body}} = HTTP2.get_response(connection, stream)
-    handle_response({headers, body}, state, callback_fun)
-
-    {:noreply, state}
-  end
-
-  defp _connection_alive?(%{connection: %{socket: pid}}) when is_pid(pid) do
-    {:links, frames} = Process.info(pid, :links)
-    Process.alive?(pid) && (Enum.count(frames) < @opened_frames_limit)
-  end
-  defp _connection_alive?(_state), do: false
-
-  defp handle_response({headers, body} = _response, state, callback_fun)
-       when (is_function(callback_fun) or is_nil(callback_fun)) do
+  defp handle_response({headers, body} = _response, state, callback_fun) do
     result =
       case status = fetch_status(headers) do
         200 ->
@@ -99,9 +86,7 @@ defmodule Express.APNS.Worker do
           {:error, %{status: status, body: body}}
       end
 
-    if callback_fun do
-      callback_fun.(state.push_message, result)
-    end
+    if is_function(callback_fun), do: callback_fun.(state.push_message, result)
   end
   defp handle_response(_, _, _), do: :nothing
 

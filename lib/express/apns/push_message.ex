@@ -21,6 +21,7 @@ defmodule Express.APNS.PushMessage do
 
   @doc "Normalizes a push message `struct` to a map acceptable by APNS"
   @spec to_apns_map(__MODULE__.t) :: map()
+  def to_apns_map(nil), do: %{}
   def to_apns_map(struct) do
     map =
       if struct |> Map.keys |> Enum.member?(:__struct__) do

@@ -28,6 +28,7 @@ defmodule Express.APNS.PushMessage.Aps do
 
   @doc "Normalizes an aps `struct` to a map acceptable by APNS"
   @spec to_apns_map(__MODULE__.t) :: map()
+  def to_apns_map(nil), do: %{}
   def to_apns_map(struct) do
     struct
     |> Map.from_struct()

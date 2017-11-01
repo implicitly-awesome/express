@@ -21,16 +21,18 @@ defmodule Express.Operations.APNS.Push do
   parameter :connection, struct: %HTTP2.Connection{}, required: true
   parameter :jwt, type: :string
   parameter :push_message, struct: %PushMessage{}, required: true
+  parameter :async, type: :boolean, default: true
 
   def process(contract) do
     connection = contract[:connection]
     jwt = contract[:jwt]
     push_message = contract[:push_message]
+    async = contract[:async]
 
-    do_push(push_message, connection, jwt)
+    do_push(push_message, connection, jwt, async)
   end
 
-  defp do_push(push_message, connection, jwt) do
+  defp do_push(push_message, connection, jwt, async) do
     {:ok, payload} =
       push_message
       |> PushMessage.to_apns_map()
@@ -42,7 +44,11 @@ defmodule Express.Operations.APNS.Push do
 
     headers = headers_for(push_message, payload, jwt)
 
-    HTTP2.send_request(connection, headers, payload)
+    if async do
+      HTTP2.send_request(connection, headers, payload)
+    else
+      HTTP2.sync_request(connection, headers, payload)
+    end
   end
 
   defp headers_for(push_message, payload, nil) do

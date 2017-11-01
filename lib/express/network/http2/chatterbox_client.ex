@@ -34,6 +34,14 @@ defmodule Express.Network.HTTP2.ChatterboxClient do
     :h2_client.send_request(socket, headers, payload)
   end
 
+  def sync_request(socket, headers, payload) do
+    :h2_client.sync_request(socket, headers, payload)
+  end
+
+  def ping(socket) do
+    :h2_client.send_ping(socket)
+  end
+
   def get_response(socket, stream) do
     :h2_client.get_response(socket, stream)
   end
