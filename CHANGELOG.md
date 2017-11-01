@@ -1,3 +1,8 @@
+## [1.2.3] - 2017.10.31
+
+* checks if APNS worker is alive before push
+* checks for opened frames count per connection before push
+
 ## [1.2.2] - 2017.10.31
 
 * APNS: worker checks if a connection alive before push

@@ -101,12 +101,12 @@ defmodule Express.PushRequests.Consumer do
                  opts: opts, callback_fun: callback_fun} = push_request, _state) do
     worker = :poolboy.checkout(PoolboyConfigs.apns_workers().name)
 
-    if APNSWorker.connection_alive?(worker) do
+    if Process.alive?(worker) && APNSWorker.connection_alive?(worker) do
       APNSWorker.push(worker, push_message, opts, callback_fun)
       :poolboy.checkin(PoolboyConfigs.apns_workers().name, worker)
     else
       :poolboy.checkin(PoolboyConfigs.apns_workers().name, worker)
-      APNSWorker.stop(worker)
+
       {:error, :worker_killed, push_request}
     end
   end

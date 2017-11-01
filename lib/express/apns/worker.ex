@@ -10,6 +10,8 @@ defmodule Express.APNS.Worker do
 
   require Logger
 
+  @opened_frames_limit 5
+
   defmodule State do
     @type t :: %__MODULE__{
       connection: HTTP2.Connection.t,
@@ -79,7 +81,8 @@ defmodule Express.APNS.Worker do
   end
 
   defp _connection_alive?(%{connection: %{socket: pid}}) when is_pid(pid) do
-    Process.alive?(pid)
+    {:links, frames} = Process.info(pid, :links)
+    Process.alive?(pid) && (Enum.count(frames) < @opened_frames_limit)
   end
   defp _connection_alive?(_state), do: false
 
