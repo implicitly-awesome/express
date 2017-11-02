@@ -1,3 +1,8 @@
+## [1.2.5] - 2017.11.02
+
+* APNS worker's asunc push
+* APNS worker ttl
+
 ## [1.2.4] - 2017.11.01
 
 * refactored APNS worker check

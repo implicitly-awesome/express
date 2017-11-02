@@ -14,10 +14,11 @@ defmodule Express.APNS.Worker do
     @type t :: %__MODULE__{
       connection: HTTP2.Connection.t,
       push_message: PushMessage.t,
-      callback_fun: Express.callback_fun
+      callback_fun: Express.callback_fun,
+      stop_at: pos_integer()
     }
 
-    defstruct ~w(connection push_message callback_fun)a
+    defstruct ~w(connection push_message callback_fun stop_at)a
   end
 
   def start_link(_), do: GenServer.start_link(__MODULE__, :ok)
@@ -33,47 +34,62 @@ defmodule Express.APNS.Worker do
   end
 
   def push(worker, push_message, opts, callback_fun) do
-    GenServer.call(worker, {:push, push_message, opts, callback_fun}, 2000)
+    GenServer.call(worker, {:push, push_message, opts, callback_fun}, 1000)
   end
 
   def handle_call({:push, push_message, _opts, callback_fun}, _from, state) do
-    with true <- Process.alive?(state.connection.socket),
-         {:ok, {headers, body}} <- (push_message
-                                    |> push_params(state)
-                                    |> Push.run())
-    do
-      handle_response({headers, body}, state, callback_fun)
-      {:reply, :pushed, state}
+    if state.stop_at && state.stop_at <= Timex.to_unix(Timex.now()) do
+      {:stop, :normal, {:error, :connection_down}, state}
     else
-      {:error, reason} ->
-        {:stop, :normal, {:error, reason}, state}
-      _ ->
-        {:stop, :normal, {:error, :push_error}, state}
+      if Process.alive?(state.connection.socket) do
+        push_message
+        |> push_params(state)
+        |> Push.run!()
+
+        new_state =
+          state
+          |> Map.put(:push_message, push_message)
+          |> Map.put(:callback_fun, callback_fun)
+
+        {:reply, :pushed, new_state}
+      else
+        {:stop, :normal, {:error, :connection_down}, state}
+      end
     end
   end
 
-  def handle_info(:timeout, state) do
-    {:stop, :normal, {:error, :timeout}, state}
+  def handle_info({:END_STREAM, stream},
+                  %{connection: connection,
+                    callback_fun: callback_fun} = state)
+  do
+    {:ok, {headers, body}} = HTTP2.get_response(connection, stream)
+    handle_response({headers, body}, state, callback_fun)
+
+    stop_at = Timex.now() |> Timex.shift(seconds: 2) |> Timex.to_unix()
+    new_state = Map.put(state, :stop_at, stop_at)
+
+    {:noreply, new_state}
+  end
+  def handle_info(:timeout, state), do: {:stop, :normal, {:error, :timeout}, state}
+  def handle_info(_, state), do: {:noreply, state}
+
+  @spec push_params(PushMessage.t, State.t) :: Keyword.t
+  defp push_params(push_message, %{connection: connection}) when is_map(connection) do
+    if is_map(connection.ssl_config) do
+      [
+        push_message: push_message,
+        connection: connection
+      ]
+    else
+      [
+        push_message: push_message,
+        connection: connection,
+        jwt: JWTHolder.get_jwt()
+      ]
+    end
   end
 
-  defp push_params(push_message, state) do
-    params =
-      if is_map(state.connection.ssl_config) do
-        [
-          push_message: push_message,
-          connection: state.connection
-        ]
-      else
-        [
-          push_message: push_message,
-          connection: state.connection,
-          jwt: JWTHolder.get_jwt()
-        ]
-      end
-
-    Keyword.put(params, :async, false)
-  end
-
+  @spec handle_response({list(), String.t}, State.t, Express.callback_fun) :: any()
   defp handle_response({headers, body} = _response, state, callback_fun) do
     result =
       case status = fetch_status(headers) do
@@ -86,7 +102,11 @@ defmodule Express.APNS.Worker do
           {:error, %{status: status, body: body}}
       end
 
-    if is_function(callback_fun), do: callback_fun.(state.push_message, result)
+    if is_function(callback_fun) do
+      callback_fun.(state.push_message, result)
+    else
+      result
+    end
   end
   defp handle_response(_, _, _), do: :nothing
 
