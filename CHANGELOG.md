@@ -1,3 +1,7 @@
+## [1.2.6] - 2017.11.10
+
+* Tasks & their Supervisor improvements
+
 ## [1.2.5] - 2017.11.02
 
 * APNS worker's asunc push

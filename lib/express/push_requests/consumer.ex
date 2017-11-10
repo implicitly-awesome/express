@@ -74,7 +74,11 @@ defmodule Express.PushRequests.Consumer do
        when is_list(push_requests) and length(push_requests) > 0 do
     results =
       push_requests
-      |> Task.async_stream(fn(pr) -> do_push(pr, state) end)
+      |> Task.async_stream(fn(pr) ->
+           do_push(pr, state)
+         end,
+         timeout: 2000, on_timeout: :kill_task
+      )
       |> Enum.into([])
 
     errored_push_requests =
