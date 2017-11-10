@@ -1,4 +1,4 @@
-## [1.2.6] - 2017.11.10
+## [1.2.6, 1.2.7] - 2017.11.10
 
 * Tasks & their Supervisor improvements
 

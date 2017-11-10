@@ -42,16 +42,11 @@ defmodule Express.PushRequests.Consumer do
   def init(:ok) do
     state = %State{producer: Express.PushRequests.Buffer}
     Process.flag(:trap_exit, true)
-    send(self(), :init)
+    GenStage.async_subscribe(self(), to: state.producer)
 
     {:consumer, state}
   end
 
-  def handle_info(:init, state) do
-    GenStage.async_subscribe(self(), to: state.producer)
-
-    {:noreply, [], state}
-  end
   def handle_info(_, state), do: {:noreply, [], state}
 
   def handle_subscribe(:producer, _opts, from, state) do
@@ -73,11 +68,11 @@ defmodule Express.PushRequests.Consumer do
   defp handle_push_requests(push_requests, from, state)
        when is_list(push_requests) and length(push_requests) > 0 do
     results =
-      push_requests
-      |> Task.async_stream(fn(pr) ->
+      Express.TasksSupervisor
+      |> Task.Supervisor.async_stream(push_requests, fn(pr) ->
            do_push(pr, state)
          end,
-         timeout: 2000, on_timeout: :kill_task
+         timeout: 2500, on_timeout: :kill_task
       )
       |> Enum.into([])
 
