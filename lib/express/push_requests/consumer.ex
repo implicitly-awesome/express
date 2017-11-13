@@ -94,8 +94,8 @@ defmodule Express.PushRequests.Consumer do
                  opts: opts, callback_fun: callback_fun} = push_request, _state) do
     :poolboy.transaction(PoolboyConfigs.apns_workers().name, fn(worker) ->
       case APNSWorker.push(worker, push_message, opts, callback_fun) do
-        :pushed -> :pushed
         {:error, _reason} -> {:error, push_request}
+        _ -> :pushed
       end
     end)
   end

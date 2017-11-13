@@ -1,6 +1,7 @@
 defmodule Express.APNS.Supervisor do
   use Supervisor
 
+  alias Express.Configuration
   alias Express.APNS.Connection
   alias Express.Operations.PoolboyConfigs
 
@@ -21,7 +22,7 @@ defmodule Express.APNS.Supervisor do
         :poolboy.child_spec(
           PoolboyConfigs.apns_workers().name,
           PoolboyConfigs.apns_workers().config,
-          []
+          [async: Configuration.APNS.workers_push_async()]
         )
       ]
 

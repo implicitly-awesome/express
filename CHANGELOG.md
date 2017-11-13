@@ -1,3 +1,7 @@
+## [1.2.8] - 2017.11.13
+
+* Added APNS sync/async option for a worker (async faster, sync more stable)
+
 ## [1.2.6, 1.2.7] - 2017.11.10
 
 * Tasks & their Supervisor improvements

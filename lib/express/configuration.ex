@@ -62,6 +62,12 @@ defmodule Express.Configuration do
       Application.get_env(:express, :module).apns()[:auth_key]
     end
 
+    @spec workers_push_async() :: boolean()
+    def workers_push_async do
+      Application.get_env(:express, :apns)[:workers_push_async] ||
+      Application.get_env(:express, :module).apns()[:workers_push_async]
+    end
+
     @spec workers_pool_config() :: Keyword.t
     def workers_pool_config do
       Application.get_env(:express, :apns)[:workers_pool_config] ||

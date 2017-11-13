@@ -15,19 +15,20 @@ defmodule Express.APNS.Worker do
       connection: HTTP2.Connection.t,
       push_message: PushMessage.t,
       callback_fun: Express.callback_fun,
+      async: boolean(),
       stop_at: pos_integer()
     }
 
-    defstruct ~w(connection push_message callback_fun stop_at)a
+    defstruct ~w(connection push_message callback_fun async stop_at)a
   end
 
-  def start_link(_), do: GenServer.start_link(__MODULE__, :ok)
+  def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, {:ok, opts})
 
-  def init(:ok) do
+  def init({:ok, opts}) do
     connection = APNSConnection.new()
 
     if connection do
-      {:ok, %State{connection: connection}}
+      {:ok, %State{connection: connection, async: (opts[:async] in ["true", true])}}
     else
       {:stop, :no_connection}
     end
@@ -37,7 +38,7 @@ defmodule Express.APNS.Worker do
     GenServer.call(worker, {:push, push_message, opts, callback_fun}, 1000)
   end
 
-  def handle_call({:push, push_message, _opts, callback_fun}, _from, state) do
+  def handle_call({:push, push_message, _opts, callback_fun}, _from, %{async: true} = state) do
     if state.stop_at && state.stop_at <= Timex.to_unix(Timex.now()) do
       {:stop, :normal, {:error, :connection_down}, state}
     else
@@ -52,6 +53,27 @@ defmodule Express.APNS.Worker do
           |> Map.put(:callback_fun, callback_fun)
 
         {:reply, :pushed, new_state}
+      else
+        {:stop, :normal, {:error, :connection_down}, state}
+      end
+    end
+  end
+  def handle_call({:push, push_message, _opts, callback_fun}, _from, %{async: false} = state) do
+    if state.stop_at && state.stop_at <= Timex.to_unix(Timex.now()) do
+      {:stop, :normal, {:error, :connection_down}, state}
+    else
+      if Process.alive?(state.connection.socket) do
+        {headers, [body]} =
+          push_message
+          |> push_params(state)
+          |> Push.run!()
+
+        result = handle_response({headers, body}, state, callback_fun)
+
+        stop_at = Timex.now() |> Timex.shift(seconds: 2) |> Timex.to_unix()
+        new_state = Map.put(state, :stop_at, stop_at)
+
+        {:reply, {:ok, result}, new_state}
       else
         {:stop, :normal, {:error, :connection_down}, state}
       end
@@ -74,17 +96,19 @@ defmodule Express.APNS.Worker do
   def handle_info(_, state), do: {:noreply, state}
 
   @spec push_params(PushMessage.t, State.t) :: Keyword.t
-  defp push_params(push_message, %{connection: connection}) when is_map(connection) do
+  defp push_params(push_message, %{connection: connection, async: async}) when is_map(connection) do
     if is_map(connection.ssl_config) do
       [
         push_message: push_message,
-        connection: connection
+        connection: connection,
+        async: async
       ]
     else
       [
         push_message: push_message,
         connection: connection,
-        jwt: JWTHolder.get_jwt()
+        jwt: JWTHolder.get_jwt(),
+        async: async
       ]
     end
   end
@@ -104,9 +128,9 @@ defmodule Express.APNS.Worker do
 
     if is_function(callback_fun) do
       callback_fun.(state.push_message, result)
-    else
-      result
     end
+
+    result
   end
   defp handle_response(_, _, _), do: :nothing
 

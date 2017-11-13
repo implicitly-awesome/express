@@ -16,7 +16,7 @@ Default consumer max demand is number_of_available_schedulers * 5 (multiplier ca
 # in your mix.exs file
 
 def deps do
-  {:express, "~> 1.2.7"}
+  {:express, "~> 1.2.8"}
 end
 
 # in your config.exs file (more in configuration section below)
@@ -167,7 +167,9 @@ config :express,
            {:worker_module, Express.APNS.Worker},
            {:size, 8},
            {:max_overflow, 1}
-         ]
+         ],
+
+         workers_push_async: true
        ]
 ```
 
