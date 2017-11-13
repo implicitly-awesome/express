@@ -16,7 +16,7 @@ defmodule Express.Supervisor do
       supervisor(Express.PushRequests.Supervisor, [], restart: :permanent),
       supervisor(
         Task.Supervisor,
-        [[name: Express.TasksSupervisor, restart: :transient]],
+        [[name: Express.TasksSupervisor, restart: :temporary]],
         restart: :permanent
       )
     ]
