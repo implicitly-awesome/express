@@ -63,7 +63,7 @@ defmodule Express.APNS.Worker do
       {:stop, :normal, {:error, :connection_down}, state}
     else
       if Process.alive?(state.connection.socket) do
-        {headers, [body]} =
+        {headers, body} =
           push_message
           |> push_params(state)
           |> Push.run!()
@@ -142,7 +142,9 @@ defmodule Express.APNS.Worker do
 
   @spec fetch_reason(String.t) :: String.t
   defp fetch_reason(nil), do: nil
-  defp fetch_reason(""),  do: ""
+  defp fetch_reason(""), do: ""
+  defp fetch_reason([]), do: ""
+  defp fetch_reason([body]), do: fetch_reason(body)
   defp fetch_reason(body) do
     {:ok, body} = Poison.decode(body)
     Macro.underscore(body["reason"])

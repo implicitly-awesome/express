@@ -2,6 +2,7 @@
 
 * Added APNS sync/async option for a worker (async is faster, sync is more stable)
 * Tasks Supervisor: :temporary restart strategy
+* bug fixes
 
 ## [1.2.6, 1.2.7] - 2017.11.10
 
