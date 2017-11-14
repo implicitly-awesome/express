@@ -45,10 +45,12 @@ defmodule Express.PushRequests.Buffer do
 
   @doc "Adds a push request to the buffer."
   @spec add(PushRequest.t) :: :ok | {:error, any()}
-  def add(push_request), do: GenServer.cast(__MODULE__, {:add, push_request})
+  def add(push_request) do
+    GenServer.call(__MODULE__, {:add, push_request}, 100)
+  end
 
-  def handle_cast({:add, push_request}, state) do
-    {:noreply, [push_request], state}
+  def handle_call({:add, push_request}, _from, state) do
+    {:reply, :ok, [push_request], state}
   end
 
   def handle_demand(_, state) do

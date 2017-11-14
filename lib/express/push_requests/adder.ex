@@ -41,4 +41,9 @@ defmodule Express.PushRequests.Adder do
       {:noreply, state}
     end
   end
+
+  def terminate({:timeout, _}, _state) do
+    GenStage.stop(Express.PushRequests.Buffer, :normal)
+    :normal
+  end
 end

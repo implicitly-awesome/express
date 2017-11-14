@@ -28,7 +28,9 @@ defmodule Express.APNS.Worker do
     connection = APNSConnection.new()
 
     if connection do
-      {:ok, %State{connection: connection, async: (opts[:async] in ["true", true])}}
+      {:ok, %State{connection: connection,
+                   async: (opts[:async] in ["true", true]),
+                   stop_at: shift_timer()}}
     else
       {:stop, :no_connection}
     end
@@ -70,8 +72,7 @@ defmodule Express.APNS.Worker do
 
         result = handle_response({headers, body}, state, callback_fun)
 
-        stop_at = Timex.now() |> Timex.shift(seconds: 2) |> Timex.to_unix()
-        new_state = Map.put(state, :stop_at, stop_at)
+        new_state = Map.put(state, :stop_at, shift_timer())
 
         {:reply, {:ok, result}, new_state}
       else
@@ -87,8 +88,7 @@ defmodule Express.APNS.Worker do
     {:ok, {headers, body}} = HTTP2.get_response(connection, stream)
     handle_response({headers, body}, state, callback_fun)
 
-    stop_at = Timex.now() |> Timex.shift(seconds: 2) |> Timex.to_unix()
-    new_state = Map.put(state, :stop_at, stop_at)
+    new_state = Map.put(state, :stop_at, shift_timer())
 
     {:noreply, new_state}
   end
@@ -157,5 +157,10 @@ defmodule Express.APNS.Worker do
     """
 
     LogMessage.run!(message: error_message, type: :warn)
+  end
+
+  @spec shift_timer() :: pos_integer()
+  defp shift_timer do
+    Timex.now() |> Timex.shift(seconds: 2) |> Timex.to_unix()
   end
 end
