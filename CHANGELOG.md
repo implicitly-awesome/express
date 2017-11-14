@@ -1,3 +1,7 @@
+## [1.2.10] - 2017.11.14
+
+* Dynamic consumer
+
 ## [1.2.8, 1.2.9] - 2017.11.13
 
 * Added APNS sync/async option for a worker (async is faster, sync is more stable)

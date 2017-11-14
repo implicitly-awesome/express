@@ -42,12 +42,12 @@ defmodule Express.PushRequests.Consumer do
   def init(:ok) do
     state = %State{producer: Express.PushRequests.Buffer}
     Process.flag(:trap_exit, true)
-    GenStage.async_subscribe(self(), to: state.producer)
+    GenStage.async_subscribe(self(), to: state.producer, cancel: :temporary)
 
     {:consumer, state}
   end
 
-  def handle_info(_, state), do: {:noreply, [], state}
+  def handle_info(_, state), do: {:stop, :normal, state}
 
   def handle_subscribe(:producer, _opts, from, state) do
     state = Map.put(state, :subscription, from)
@@ -61,6 +61,13 @@ defmodule Express.PushRequests.Consumer do
 
     {:noreply, [], state}
   end
+  def handle_events(_, from, state) do
+    handle_push_requests(nil, from, state)
+
+    {:noreply, [], state}
+  end
+
+  def terminate(_reason, _state), do: :normal
 
   @spec handle_push_requests([PushRequest.t], {pid(), any()}, State.t) :: :ok |
                                                                           :noconnect |

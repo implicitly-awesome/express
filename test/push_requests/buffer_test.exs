@@ -14,7 +14,14 @@ defmodule PushRequests.BufferTest do
     {:ok, %{consumers_sup: consumers_sup}}
   end
 
-  test "starts N consumers", %{consumers_sup: consumers_sup} do
-    assert %{active: 10} = Supervisor.count_children(consumers_sup)
+  test "start_consumer/0: starts a consumer", %{consumers_sup: consumers_sup} do
+    ConsumersSupervisor.start_consumer()
+    assert %{active: 1} = Supervisor.count_children(consumers_sup)
+  end
+
+  test "any_consumer?/0: checks wether there is a consumer" do
+    refute ConsumersSupervisor.any_consumer?()
+    ConsumersSupervisor.start_consumer()
+    assert ConsumersSupervisor.any_consumer?()
   end
 end

@@ -16,7 +16,7 @@ Default consumer max demand is number_of_available_schedulers * 5 (multiplier ca
 # in your mix.exs file
 
 def deps do
-  {:express, "~> 1.2.9"}
+  {:express, "~> 1.2.10"}
 end
 
 # in your config.exs file (more in configuration section below)
@@ -128,7 +128,6 @@ There are all possible options for the buffer:
 config :express,
        buffer: [
          max_size: 5000,
-         consumers_count: 5,
          consumer_demand_multiplier: 5,
          adders_pool_config: [
            {:name, {:local, :buffer_adders_pool}},
@@ -223,7 +222,7 @@ defmodule YourApp.ExpressConfig.Dev do
 
   def buffer do
     [
-      consumers_count: 10
+      max_size: 1000
     ]
   end
 
@@ -256,7 +255,7 @@ As said earlier, you can even override your configuration module options later i
 config :express,
        module: YourApp.ExpressConfig.Dev,
        buffer: [
-         consumers_count: 5
+         max_size: 1000
        ]
 ```
 

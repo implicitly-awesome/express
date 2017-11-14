@@ -16,7 +16,7 @@ defmodule Express.PushRequests.ConsumersSupervisor do
       worker(
         Express.PushRequests.Consumer,
         [],
-        restart: :permanent
+        restart: :temporary
       )
     ]
   end
@@ -29,5 +29,16 @@ defmodule Express.PushRequests.ConsumersSupervisor do
   @spec start_consumer() :: Supervisor.on_start_child
   def start_consumer do
     Supervisor.start_child(__MODULE__, [])
+  end
+
+  @doc "Checks wether any consumer is present."
+  @spec any_consumer?() :: pos_integer()
+  def any_consumer?, do: consumers_count() > 0
+
+  @doc "Returns consumers (childrens) count."
+  @spec consumers_count() :: pos_integer()
+  def consumers_count do
+    %{active: count} = Supervisor.count_children(__MODULE__)
+    count
   end
 end
