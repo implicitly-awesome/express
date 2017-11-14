@@ -17,7 +17,6 @@ defmodule Express.PushRequests.Consumer do
 
   use GenStage
 
-  alias Express.Configuration
   alias Express.APNS.PushMessage, as: APNSPushMessage
   alias Express.FCM.PushMessage, as: FCMPushMessage
   alias Express.APNS.Worker, as: APNSWorker
@@ -55,7 +54,7 @@ defmodule Express.PushRequests.Consumer do
     {:automatic, state}
   end
 
-  def handle_events(push_requests, from, state) do
+  def handle_events(push_requests, _from, state) do
     handle_push_requests(push_requests, state)
 
     {:noreply, [], state}
@@ -86,7 +85,7 @@ defmodule Express.PushRequests.Consumer do
       handle_push_requests(errored_push_requests, state)
     end
   end
-  defp handle_push_requests(push_requests, state), do: :nothing
+  defp handle_push_requests(_push_requests, _state), do: :nothing
 
   @spec do_push(PushRequest.t, State.t) :: any()
   defp do_push(%{push_message: %APNSPushMessage{} = push_message,
@@ -105,14 +104,4 @@ defmodule Express.PushRequests.Consumer do
     end)
   end
   defp do_push(_push_request, _state), do: {:error, :unknown_push_message_type}
-
-  @spec ask_more(State.t) :: :ok |
-                             :noconnect |
-                             :nosuspend
-  defp ask_more(state) do
-    GenStage.ask(
-      state.subscription,
-      System.schedulers_online() * (Configuration.Buffer.consumer_demand_multiplier() || 5)
-    )
-  end
 end
