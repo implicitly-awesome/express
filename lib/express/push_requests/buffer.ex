@@ -2,13 +2,20 @@ defmodule Express.PushRequests.Buffer do
   @moduledoc """
   GenStage producer. Acts like a buffer for incoming push messages.
   Default buffer size is 5000 events.
-  Spawns GenStage consumer.
   This size can be adjusted via config file:
 
       config :express,
             buffer: [
               max_size: 10_000
             ]
+
+  Spawns number of GenStage consumers on init. Default amount of the consumers is 5.
+  This amount can be changed in config file:
+
+      config :express,
+          buffer: [
+            consumers_count: 10
+          ]
   """
 
   use GenStage
@@ -21,7 +28,19 @@ defmodule Express.PushRequests.Buffer do
   end
 
   def init(:ok) do
+    send(self(), :init)
+
     {:producer, [], buffer_size: (Configuration.Buffer.max_size() || 5000)}
+  end
+
+  def handle_info(:init, state) do
+    consumers_count = Configuration.Buffer.consumers_count() || 5
+
+    Enum.each(1..consumers_count, fn(_) ->
+      ConsumersSupervisor.start_consumer()
+    end)
+
+    {:noreply, [], state}
   end
 
   @doc "Adds a push request to the buffer."
@@ -29,20 +48,9 @@ defmodule Express.PushRequests.Buffer do
   def add(push_request), do: GenServer.cast(__MODULE__, {:add, push_request})
 
   def handle_cast({:add, push_request}, state) do
-    state = [push_request | state]
-
-    unless ConsumersSupervisor.any_consumer?() do
-      ConsumersSupervisor.start_consumer()
-    end
-
-    {:noreply, [], state}
+    {:noreply, [push_request], state}
   end
 
-  def handle_demand(demand, state) when demand > 0 do
-    {push_requests, rest} = Enum.split(state, demand)
-
-    {:noreply, [push_requests], rest}
-  end
   def handle_demand(_, state) do
     {:noreply, [], state}
   end

@@ -16,7 +16,7 @@ defmodule Express.PushRequests.ConsumersSupervisor do
       worker(
         Express.PushRequests.Consumer,
         [],
-        restart: :temporary
+        restart: :permanent
       )
     ]
   end

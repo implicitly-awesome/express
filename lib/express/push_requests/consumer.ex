@@ -51,28 +51,22 @@ defmodule Express.PushRequests.Consumer do
 
   def handle_subscribe(:producer, _opts, from, state) do
     state = Map.put(state, :subscription, from)
-    ask_more(state)
 
-    {:manual, state}
+    {:automatic, state}
   end
 
-  def handle_events([push_requests], from, state) do
-    handle_push_requests(push_requests, from, state)
-
-    {:noreply, [], state}
-  end
-  def handle_events(_, from, state) do
-    handle_push_requests(nil, from, state)
+  def handle_events(push_requests, from, state) do
+    handle_push_requests(push_requests, state)
 
     {:noreply, [], state}
   end
 
   def terminate(_reason, _state), do: :normal
 
-  @spec handle_push_requests([PushRequest.t], {pid(), any()}, State.t) :: :ok |
-                                                                          :noconnect |
-                                                                          :nosuspend
-  defp handle_push_requests(push_requests, from, state)
+  @spec handle_push_requests([PushRequest.t], State.t) :: :ok |
+                                                          :noconnect |
+                                                          :nosuspend
+  defp handle_push_requests(push_requests, state)
        when is_list(push_requests) and length(push_requests) > 0 do
     results =
       Express.TasksSupervisor
@@ -89,12 +83,10 @@ defmodule Express.PushRequests.Consumer do
       |> Enum.map(fn({_, {_, push_request}}) -> push_request end)
 
     if Enum.any?(errored_push_requests) do
-      handle_push_requests(errored_push_requests, from, state)
-    else
-      ask_more(state)
+      handle_push_requests(errored_push_requests, state)
     end
   end
-  defp handle_push_requests(_push_requests, _from, state), do: ask_more(state)
+  defp handle_push_requests(push_requests, state), do: :nothing
 
   @spec do_push(PushRequest.t, State.t) :: any()
   defp do_push(%{push_message: %APNSPushMessage{} = push_message,
