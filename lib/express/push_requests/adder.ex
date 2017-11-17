@@ -43,7 +43,8 @@ defmodule Express.PushRequests.Adder do
   end
 
   def terminate({:timeout, _}, _state) do
-    GenStage.stop(Express.PushRequests.Buffer, :normal)
+    pid = Process.whereis(Express.PushRequests.Buffer)
+    Process.exit(pid, :kill)
     :normal
   end
 end

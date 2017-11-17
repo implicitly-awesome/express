@@ -37,7 +37,7 @@ defmodule Express.APNS.Worker do
   end
 
   def push(worker, push_message, opts, callback_fun) do
-    GenServer.call(worker, {:push, push_message, opts, callback_fun}, 1000)
+    GenServer.call(worker, {:push, push_message, opts, callback_fun}, 3000)
   end
 
   def handle_call({:push, push_message, _opts, callback_fun}, _from, %{async: true} = state) do
@@ -161,6 +161,6 @@ defmodule Express.APNS.Worker do
 
   @spec shift_timer() :: pos_integer()
   defp shift_timer do
-    Timex.now() |> Timex.shift(seconds: 2) |> Timex.to_unix()
+    Timex.now() |> Timex.shift(seconds: 4) |> Timex.to_unix()
   end
 end

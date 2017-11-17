@@ -69,10 +69,9 @@ defmodule Express.PushRequests.Consumer do
        when is_list(push_requests) and length(push_requests) > 0 do
     results =
       Express.TasksSupervisor
-      |> Task.Supervisor.async_stream(push_requests, fn(pr) ->
+      |> Task.Supervisor.async_stream_nolink(push_requests, fn(pr) ->
            do_push(pr, state)
-         end,
-         timeout: 2500, on_timeout: :kill_task
+         end
       )
       |> Enum.into([])
 

@@ -1,3 +1,8 @@
+## [1.2.13] - 2017.11.17
+
+* No link b/w consumer & task
+* Adjusted timeouts
+
 ## [1.2.10, 1.2.11, 1.2.12] - 2017.11.14
 
 * Dynamic consumer
