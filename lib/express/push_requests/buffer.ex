@@ -40,8 +40,17 @@ defmodule Express.PushRequests.Buffer do
       ConsumersSupervisor.start_consumer()
     end)
 
+    Process.send_after(self(), :ping, 1000)
+
     {:noreply, [], state}
   end
+  def handle_info(:ping, state) do
+    Process.send_after(self(), :ping, 1000)
+    GenServer.cast(__MODULE__, {:add, nil})
+
+    {:noreply, [], state}
+  end
+  def handle_info(_, state), do: {:noreply, [], state}
 
   @doc "Adds a push request to the buffer."
   @spec add(PushRequest.t) :: :ok | {:error, any()}
@@ -53,7 +62,9 @@ defmodule Express.PushRequests.Buffer do
     {:reply, :ok, [push_request], state}
   end
 
-  def handle_demand(_, state) do
-    {:noreply, [], state}
+  def handle_cast({:add, push_request}, state) do
+    {:noreply, [push_request], state}
   end
+
+  def handle_demand(_, state), do: {:noreply, [], state}
 end

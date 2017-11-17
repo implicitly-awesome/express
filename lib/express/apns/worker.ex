@@ -161,6 +161,6 @@ defmodule Express.APNS.Worker do
 
   @spec shift_timer() :: pos_integer()
   defp shift_timer do
-    Timex.now() |> Timex.shift(seconds: 4) |> Timex.to_unix()
+    Timex.now() |> Timex.shift(seconds: 10) |> Timex.to_unix()
   end
 end

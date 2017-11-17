@@ -65,6 +65,7 @@ defmodule Express.PushRequests.Consumer do
   @spec handle_push_requests([PushRequest.t], State.t) :: :ok |
                                                           :noconnect |
                                                           :nosuspend
+  defp handle_push_requests([nil], _state), do: :nothing
   defp handle_push_requests(push_requests, state)
        when is_list(push_requests) and length(push_requests) > 0 do
     results =
@@ -78,7 +79,11 @@ defmodule Express.PushRequests.Consumer do
     errored_push_requests =
       results
       |> Enum.filter(fn({_, v}) -> is_tuple(v) && elem(v, 0) == :error end)
-      |> Enum.map(fn({_, {_, push_request}}) -> push_request end)
+      |> Enum.map(fn
+           {_, {:error, %PushRequest{} = push_request}} -> push_request
+           {_, {:error, _}} -> nil
+         end)
+      |> Enum.reject(&(is_nil(&1)))
 
     if Enum.any?(errored_push_requests) do
       handle_push_requests(errored_push_requests, state)

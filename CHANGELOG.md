@@ -1,7 +1,8 @@
-## [1.2.13] - 2017.11.17
+## [1.3.0] - 2017.11.17
 
 * No link b/w consumer & task
 * Adjusted timeouts
+* Buffer ping
 
 ## [1.2.10, 1.2.11, 1.2.12] - 2017.11.14
 
