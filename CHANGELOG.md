@@ -1,3 +1,7 @@
+## [1.3.1] - 2017.12.04
+
+* Bug with sync push and push_message == nil in callback_fun was fixed
+
 ## [1.3.0] - 2017.11.17
 
 * No link b/w consumer & task

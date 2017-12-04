@@ -70,9 +70,12 @@ defmodule Express.APNS.Worker do
           |> push_params(state)
           |> Push.run!()
 
-        result = handle_response({headers, body}, state, callback_fun)
+        new_state =
+          state
+          |> Map.put(:stop_at, shift_timer())
+          |> Map.put(:push_message, push_message)
 
-        new_state = Map.put(state, :stop_at, shift_timer())
+        result = handle_response({headers, body}, new_state, callback_fun)
 
         {:reply, {:ok, result}, new_state}
       else
@@ -114,20 +117,23 @@ defmodule Express.APNS.Worker do
   end
 
   @spec handle_response({list(), String.t}, State.t, Express.callback_fun) :: any()
-  defp handle_response({headers, body} = _response, state, callback_fun) do
+  defp handle_response({headers, body} = _response,
+                       %{push_message: push_message} = _state,
+                       callback_fun)
+  do
     result =
       case status = fetch_status(headers) do
         200 ->
           {:ok, %{status: status, body: body}}
         status ->
           error_reason = fetch_reason(body)
-          log_error({status, error_reason}, state.push_message)
+          log_error({status, error_reason}, push_message)
 
           {:error, %{status: status, body: body}}
       end
 
     if is_function(callback_fun) do
-      callback_fun.(state.push_message, result)
+      callback_fun.(push_message, result)
     end
 
     result
