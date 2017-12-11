@@ -121,15 +121,19 @@ defmodule Express.APNS.Worker do
                        %{push_message: push_message} = _state,
                        callback_fun)
   do
+    headers_map = Enum.reduce(headers, %{}, fn({k, v}, m) -> Map.put(m, k, v) end)
+    status = fetch_status(headers_map)
+    apns_id = fetch_apns_id(headers_map)
+
     result =
-      case status = fetch_status(headers) do
+      case status do
         200 ->
-          {:ok, %{status: status, body: body}}
+          {:ok, %{status: status, apns_id: apns_id, body: body}}
         status ->
           error_reason = fetch_reason(body)
           log_error({status, error_reason}, push_message)
 
-          {:error, %{status: status, body: body}}
+          {:error, %{status: status, apns_id: apns_id, body: body}}
       end
 
     if is_function(callback_fun) do
@@ -140,11 +144,13 @@ defmodule Express.APNS.Worker do
   end
   defp handle_response(_, _, _), do: :nothing
 
-  @spec fetch_status(list()) :: String.t | nil
-  defp fetch_status([]), do: nil
-  defp fetch_status([{":status", status} | _tail]), do: String.to_integer(status)
-  defp fetch_status([_head | tail]), do: fetch_status(tail)
+  @spec fetch_status(Map.t) :: pos_integer() | nil
+  defp fetch_status(%{":status" => status}), do: String.to_integer(status)
   defp fetch_status(_), do: nil
+
+  @spec fetch_apns_id(Map.t) :: String.t | nil
+  defp fetch_apns_id(%{"apns-id" => apns_id}), do: apns_id
+  defp fetch_apns_id(_), do: nil
 
   @spec fetch_reason(String.t) :: String.t
   defp fetch_reason(nil), do: nil

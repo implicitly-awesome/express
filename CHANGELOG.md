@@ -1,3 +1,7 @@
+## [1.3.2] - 2017.12.11
+
+* apns-id of APNS push message was added into response
+
 ## [1.3.1] - 2017.12.04
 
 * Bug with sync push and push_message == nil in callback_fun was fixed
