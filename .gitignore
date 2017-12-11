@@ -9,3 +9,4 @@ erl_crash.dump
 live_test.ex
 /lib/express/configuration/dev.ex
 /lib/express/configuration/prod.ex
+.DS_Store
