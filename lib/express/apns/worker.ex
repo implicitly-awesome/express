@@ -128,12 +128,12 @@ defmodule Express.APNS.Worker do
     result =
       case status do
         200 ->
-          {:ok, %{status: status, apns_id: apns_id, body: body}}
+          {:ok, %{id: apns_id, status: status, body: body}}
         status ->
           error_reason = fetch_reason(body)
           log_error({status, error_reason}, push_message)
 
-          {:error, %{status: status, apns_id: apns_id, body: body}}
+          {:error, %{id: apns_id, status: status, body: body}}
       end
 
     if is_function(callback_fun) do

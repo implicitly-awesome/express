@@ -7,8 +7,8 @@ defmodule Express do
   alias Express.APNS
   alias Express.FCM
 
-  @type push_result :: {:ok, %{status: pos_integer(), body: any()}} |
-                        {:error, %{status: pos_integer(), body: any()}}
+  @type push_result :: {:ok, %{id: any(), status: pos_integer(), body: any()}} |
+                        {:error, %{id: any(), status: pos_integer(), body: any()}}
 
   @type callback_fun :: ((PushMessage.t, Express.push_result) -> any())
 

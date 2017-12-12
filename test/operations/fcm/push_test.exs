@@ -10,11 +10,11 @@ defmodule Operations.FCM.PushTest do
 
   @response_200 {:ok, %HTTPoison.Response{
     status_code: 200,
-    body: ~S({"results":["everything is fine"]})
+    body: ~S({"multicast_id":123456,"results":[{"message_id":"messageid"}]})
   }}
   @response_200_error {:ok, %HTTPoison.Response{
     status_code: 200,
-    body: ~S({"results":[{"error":"oops"}, {"error":"oops2"}]})
+    body: ~S({"multicast_id":123456,"results":[{"error":"oops","message_id":"messageid"}, {"error":"oops2","message_id":"messageid"}]})
   }}
   @response_401_error {:ok, %HTTPoison.Response{
     status_code: 401,
@@ -45,7 +45,7 @@ defmodule Operations.FCM.PushTest do
           push_message: push_message,
           opts: [],
           callback_fun: fn (_, result) ->
-            assert result == {:ok, %{body: "{\"results\":[\"everything is fine\"]}", status: 200}}
+            assert result == {:ok, %{id: %{multicast_id: 123456, message_id: "messageid"}, body: "{\"multicast_id\":123456,\"results\":[{\"message_id\":\"messageid\"}]}", status: 200}}
           end
         )
       end
@@ -58,7 +58,7 @@ defmodule Operations.FCM.PushTest do
           push_message: push_message,
           opts: [],
           callback_fun: fn (_, result) ->
-            assert result == {:error, %{status: 200, body: "{\"results\":[{\"error\":\"oops\"}, {\"error\":\"oops2\"}]}"}}
+            assert result == {:error, %{id: %{multicast_id: 123456, message_id: "messageid"}, status: 200, body: "{\"multicast_id\":123456,\"results\":[{\"error\":\"oops\",\"message_id\":\"messageid\"}, {\"error\":\"oops2\",\"message_id\":\"messageid\"}]}"}}
           end
         )
       end
@@ -71,7 +71,7 @@ defmodule Operations.FCM.PushTest do
           push_message: push_message,
           opts: [],
           callback_fun: fn (_, result) ->
-            assert result == {:error, %{status: 401, body: "{\"results\":[{\"error\":\"oops\"}, {\"error\":\"oops2\"}]}"}}
+            assert result == {:error, %{id: nil, status: 401, body: "{\"results\":[{\"error\":\"oops\"}, {\"error\":\"oops2\"}]}"}}
           end
         )
       end
@@ -84,7 +84,7 @@ defmodule Operations.FCM.PushTest do
           push_message: push_message,
           opts: [],
           callback_fun: fn (_, result) ->
-            assert result == {:error, %{status: 404, body: "{\"results\":[{\"error\":\"oops\"}, {\"error\":\"oops2\"}]}"}}
+            assert result == {:error, %{id: nil, status: 404, body: "{\"results\":[{\"error\":\"oops\"}, {\"error\":\"oops2\"}]}"}}
           end
         )
       end

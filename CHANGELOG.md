@@ -1,3 +1,7 @@
+## [1.3.3] - 2017.12.12
+
+* a push message id in push result was unified (single `id` key): a pair of `message_id` and `multicast_id` for FCM, `apns_id` for APNS
+
 ## [1.3.2] - 2017.12.11
 
 * apns-id of APNS push message was added into response

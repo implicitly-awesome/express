@@ -16,7 +16,7 @@ Default consumer max demand is number_of_available_schedulers * 5 (multiplier ca
 # in your mix.exs file
 
 def deps do
-  {:express, "~> 1.3.2"}
+  {:express, "~> 1.3.3"}
 end
 
 # in your config.exs file (more in configuration section below)
@@ -341,8 +341,8 @@ Nothing to add here, but:
 
 ```elixir
 # push result type
-@type push_result :: {:ok, %{status: pos_integer(), body: any()}} |
-                     {:error, %{status: pos_integer(), body: any()}}
+@type push_result :: {:ok, %{id: any(), status: pos_integer(), body: any()}} |
+                     {:error, %{id: any(), status: pos_integer(), body: any()}}
 ```
 
 * at this moment the single option you can pass with `opts` argument - `delay`

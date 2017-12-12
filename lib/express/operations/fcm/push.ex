@@ -37,8 +37,7 @@ defmodule Express.Operations.FCM.Push do
   end
 
   @spec do_push(PushMessage.t, Keyword.t) ::
-    {:ok, %{status: pos_integer(), body: String.t}} |
-    {:error, %{status: pos_integer(), body: String.t}} |
+    Express.push_result |
     {:error, {:http_error, any()}} |
     {:error, :unhandled_error}
   defp do_push(push_message, opts) do
@@ -63,10 +62,10 @@ defmodule Express.Operations.FCM.Push do
       {:ok, %HTTPoison.Response{status_code: 401 = status, body: body}} ->
         error_message = "[FCM worker] Unauthorized API key."
         LogMessage.run!(message: error_message)
-        {:error, %{status: status, body: body}}
+        {:error, %{id: nil, status: status, body: body}}
       {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
         log_error({status, body}, push_message)
-        {:error, %{status: status, body: body}}
+        {:error, %{id: nil, status: status, body: body}}
       {:error, error} ->
         error_message = """
         [FCM worker] HTTPoison could not handle a request.
@@ -88,9 +87,12 @@ defmodule Express.Operations.FCM.Push do
 
   @spec handle_response(PushMessage.t, {String.t, String.t}) :: :ok
   defp handle_response(push_message, {status, body}) do
+    decoded_body = Poison.decode!(body)
+    multicast_id = fetch_multicast_id(decoded_body)
+    message_id = fetch_message_id(decoded_body)
+
     errors =
-      body
-      |> Poison.decode!
+      decoded_body
       |> Map.get("results", [])
       |> Enum.map(&(handle_result(&1)))
       |> Enum.reject(&(&1 == :ok))
@@ -100,15 +102,27 @@ defmodule Express.Operations.FCM.Push do
         log_error({status, error_message}, push_message)
       end)
 
-      {:error, %{status: status, body: body}}
+      {:error, %{id: %{message_id: message_id, multicast_id: multicast_id},
+                 status: status,
+                 body: body}}
     else
-      {:ok, %{status: status, body: body}}
+      {:ok, %{id: %{message_id: message_id, multicast_id: multicast_id},
+              status: status,
+              body: body}}
     end
   end
 
   @spec handle_result(map()) :: :ok | {:error, String.t}
   defp handle_result(%{"error" => message}), do: {:error, message}
   defp handle_result(_), do: :ok
+
+  defp fetch_multicast_id(%{"multicast_id" => multicast_id}), do: multicast_id
+  defp fetch_multicast_id(_), do: nil
+
+  defp fetch_message_id(%{"results" => [%{"message_id" => message_id} | _tail]}) do
+    message_id
+  end
+  defp fetch_message_id(_), do: nil
 
   @spec log_error({String.t, String.t}, PushMessage.t) :: :ok | {:error, any()}
   defp log_error({status, reason}, push_message) do
